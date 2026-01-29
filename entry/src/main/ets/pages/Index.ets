@@ -24,6 +24,11 @@ struct Index {
   @State message: string = '壁纸应用';
   @State wallpaperList: WallpaperItem[] = [];
 
+  // 统一定义间距常量
+  private readonly CARD_MARGIN_HORIZONTAL: number = 6; // 卡片水平间距
+  private readonly CARD_MARGIN_VERTICAL: number = 6;  // 卡片垂直间距
+  private readonly CARD_PADDING: number = 8;          // 卡片内边距
+
   aboutToAppear() {
     // 从应用的资源配置中获取wallhaven开头的文件列表
     // 这种方式模拟了从外部获取文件列表的场景（例如从服务器或本地数据库）
@@ -117,6 +122,86 @@ struct Index {
     ];
   }
 
+  // 带间距的壁纸卡片组件
+  @Builder
+  WallpaperCardWithMargin(item: WallpaperItem) {
+    Column() {
+      this.WallpaperCardContent(item)
+    }
+    .margin({
+      left: this.CARD_MARGIN_HORIZONTAL,
+      right: this.CARD_MARGIN_HORIZONTAL,
+      top: this.CARD_MARGIN_VERTICAL,
+      bottom: this.CARD_MARGIN_VERTICAL
+    })
+  }
+
+  // 壁纸卡片内容组件
+  @Builder
+  WallpaperCardContent(item: WallpaperItem) {
+    Column() {
+      Image(item.imageUrl)
+        .width('100%')
+        .height(item.calculatedHeight ? item.calculatedHeight : 180)
+        .objectFit(ImageFit.Cover)
+        .borderRadius(8)
+
+      // 壁纸信息
+      Row() {
+        Column() {
+          Text(item.name)
+            .fontSize(13)
+            .fontWeight(FontWeight.Medium)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+          if (item.aspectRatio) {
+            Text(`宽高比: ${item.aspectRatio.toFixed(2)}`)
+              .fontSize(11)
+              .fontColor('#888888')
+              .margin({ top: 2 })
+          }
+        }
+        .layoutWeight(1)
+        .margin({ right: 8 }) // 增加右边距给下载按钮更多空间
+
+        // 下载按钮 - 优化显示
+        Button('下载')
+          .width(58) // 增加宽度确保文字完整显示
+          .height(28) // 略微增加高度
+          .fontSize(12) // 使用标准字体大小
+          .fontColor('#ffffff')
+          .backgroundColor('#ff2262db')
+          .borderRadius(14) // 圆角与高度匹配
+          .padding({ left: 8, right: 8 }) // 增加内边距
+          .onClick(() => {
+            console.info(`正在下载壁纸: ${item.name}`);
+          })
+      }
+      .width('100%')
+      .margin({ top: 6 })
+    }
+    .backgroundColor('#ffffff')
+    .padding(this.CARD_PADDING)
+    .borderRadius(8)
+    .width('100%')
+    .shadow({
+      radius: 3,
+      color: '#1F000000',
+      offsetX: 0,
+      offsetY: 1
+    })
+    .onClick(() => {
+      console.log(`点击了壁纸: ${item.name}`);
+    })
+  }
+
+  // 原始壁纸卡片组件（保持兼容性）
+  @Builder
+  WallpaperCard(item: WallpaperItem) {
+    this.WallpaperCardContent(item)
+  }
+
   build() {
     Column() {
       // 顶部导航栏
@@ -125,91 +210,34 @@ struct Index {
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .layoutWeight(1)
-          .textAlign(TextAlign.Start)
+          .textAlign(TextAlign.Center)
+          .backgroundColor('#ffffff')
 
         // 搜索图标占位
         Image($r('app.media.foreground'))
           .width(24)
           .height(24)
-          .visibility(Visibility.Hidden) // 暂时隐藏，后续可替换为真实的搜索图标
+          .visibility(Visibility.Hidden)
       }
       .width('100%')
       .height(50)
       .padding({ left: 16, right: 16 })
       .alignItems(VerticalAlign.Center)
+      .backgroundColor('#ffffff')
 
-      // 网格布局展示壁纸
-      Scroll() {
-        Column() {
-          // 使用GridRow来创建两列布局
-          GridRow({ columns: 2, gutter: 8 }) {
-            ForEach(this.wallpaperList, (item: WallpaperItem) => {
-              GridCol({
-                span: 1,
-                offset: 0
-              }) {
-                // 壁纸卡片
-                Column() {
-                  Image(item.imageUrl)
-                    .width('100%')
-                    .height(item.calculatedHeight ? item.calculatedHeight : 200)  // 使用计算后的高度
-                    .objectFit(ImageFit.Cover)  // 保持图片比例并裁剪
-                    .borderRadius(12)
-
-                  // 壁纸信息
-                  Row() {
-                    Column() {
-                      Text(item.name)
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Medium)
-                        .maxLines(1)
-                        .textOverflow({ overflow: TextOverflow.Ellipsis })
-
-                      if (item.aspectRatio) {
-                        Text(`宽高比: ${item.aspectRatio.toFixed(2)}`)
-                          .fontSize(12)
-                          .fontColor('#888888')
-                          .margin({ top: 4 })
-                      }
-                    }
-                    .layoutWeight(1)
-
-                    // 下载按钮
-                    Button('下载')
-                      .width(60)
-                      .height(30)
-                      .fontSize(12)
-                      .backgroundColor('#FF4081')
-                      .borderRadius(15)
-                      .onClick(() => {
-                        console.info(`正在下载壁纸: ${item.name}`);
-                        // 实现下载功能
-                      })
-                  }
-                  .width('100%')
-                  .margin({ top: 8 })
-                }
-                .backgroundColor('#ffffff')
-                .padding(12)
-                .borderRadius(12)
-                .shadow({
-                  radius: 4,
-                  color: '#1F000000',
-                  offsetX: 0,
-                  offsetY: 2
-                })
-                .onClick(() => {
-                  // 这里可以处理点击事件，如跳转到详情页
-                  console.log(`点击了壁纸: ${item.name}`);
-                })
-              }
-            })
+      // 使用WaterFlow组件实现两列瀑布流布局
+      WaterFlow() {
+        ForEach(this.wallpaperList, (item: WallpaperItem) => {
+          FlowItem() {
+            this.WallpaperCardWithMargin(item)
           }
-          .padding({ left: 12, right: 12 })
-        }
+        })
       }
+      .columnsTemplate('1fr 1fr') // 两列等宽布局
+      .columnsGap(0) // 使用卡片margin控制列间距
+      .rowsGap(0)   // 使用卡片margin控制行间距
+      .padding({ left: 0, right: 0, top: 8, bottom: 8 }) // 只保留上下边距
       .layoutWeight(1)
-      .scrollBar(BarState.On)
     }
     .width('100%')
     .height('100%')
