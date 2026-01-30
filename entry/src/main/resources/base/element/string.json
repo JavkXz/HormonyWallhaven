@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "label"
+    },
+    {
+      "name": "INTERNET_permission_reason",
+      "value": "允许应用访问网络以获取壁纸资源"
     }
   ]
 }

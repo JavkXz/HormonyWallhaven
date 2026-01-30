@@ -184,3 +184,12 @@ FirstApplication/
 - 优先使用 HarmonyOS 的声明式 UI 和 `@State` 驱动动画，通过改变状态变量触发动画
 - 对于包含复杂子组件的动画，将其设置为 `renderGroup(true)`，减少渲染批次
 - 不可以在动画过程中频繁改变组件的 `width`、`height`、`padding`、`margin` 等布局属性，严重影响性能
+
+## Qwen Added Memories
+- 确保使用的api和编码规范遵循https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ability-kit 在开发完成后根据这个文档进行检查
+
+## 已学习的编码规范
+- ArkTS/ets 语法约束：不支持索引访问类型、不支持环境模块声明、不支持 any 和 unknown 类型、不支持 as const 断言、不支持对象类型中的调用签名、不支持类字面量、不支持将类用作对象等
+- HarmonyOS API 使用规范：优先使用 HarmonyOS 官方提供的 API、UI 组件、动画、代码模板；API 调用前确认遵循官方文档入参、返回值及对应 API Level 和设备支持情况；确认是否需要在文件头添加 import 语句；确认是否需要对应权限等
+- ArkUI 动画规范：优先使用 HarmonyOS 提供的原生动画 API 和高级模板；优先使用 HarmonyOS 的声明式 UI 和 `@State` 驱动动画，通过改变状态变量触发动画；对于包含复杂子组件的动画，将其设置为 `renderGroup(true)`，减少渲染批次；不在动画过程中频繁改变组件的 `width`、`height`、`padding`、`margin` 等布局属性
+- 在HarmonyOS应用开发中，需要严格遵循ArkTS/ets语法约束，包括但不限于：不支持any和unknown类型、不支持解构赋值、不支持类表达式、不支持全局作用域等。同时要遵循HarmonyOS API使用规范和ArkUI动画规范。
