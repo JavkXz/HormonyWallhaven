@@ -1,6 +1,5 @@
 import { AppConfig } from '../utils/AppConfig';
 
-@Entry
 @Component
 struct SettingsPage {
   @State apiKey: string = '';

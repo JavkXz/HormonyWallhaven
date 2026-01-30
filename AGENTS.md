@@ -1,199 +1,110 @@
-# Agent Guidelines for HarmonyOS Wallpaper Application
+# PROJECT KNOWLEDGE BASE
 
-This document provides guidelines for AI coding agents working on this HarmonyOS/OpenHarmony wallpaper application.
+## 【最高优先级指令】
+**所有思考、回答和生成的文件统一使用中文。**
 
-## Build Commands
+---
 
-### Build
-- **Debug build**: `hvigor buildDebug`
-- **Release build**: `hvigor buildRelease`
-- **Deploy**: `hvigor deploy`
+**Generated:** 2026-01-30
+**Commit:** Unknown
+**Branch:** Unknown
 
-### Testing
-Tests use the Hypium framework (HarmonyOS testing framework).
-- **Test files location**:
-  - Local unit tests: `entry/src/test/*.ets`
-  - Instrumented tests: `entry/src/ohosTest/ets/test/*.ets`
-- **Run tests**: Execute tests through DevEco Studio's test runner
-- **Test structure**: Each test file exports a function that calls test suites using `describe()`, `it()` from `@ohos/hypium`
-- **Single test filter**: Use test attributes (Level, Size, TestType) to filter specific tests
+## OVERVIEW
+HarmonyOS 壁纸应用，使用 wallhaven.cc API、ArkTS 和声明式 UI（WaterFlow）。
 
-### Linting
-- Linting is configured in `code-linter.json5`
-- Lints `**/*.ets` files (ignoring test/mock/node_modules/build directories)
-- Runs ESLint with TypeScript and performance rules
-- Lint automatically runs during build process
-
-## Code Style Guidelines
-
-### File Structure
-- **File extension**: All source files use `.ets` extension (ArkTS/TypeScript variant)
-- **Directory structure**:
-  - `entry/src/main/ets/entryability/` - Application lifecycle (UIAbility)
-  - `entry/src/main/ets/pages/` - UI pages/components
-  - `entry/src/main/ets/service/` - Business logic services
-  - `entry/src/main/ets/model/` - Data models/interfaces
-  - `entry/src/main/ets/utils/` - Utility classes
-
-### Imports
-```typescript
-// HarmonyOS kits - use @kit.* imports
-import { http } from '@kit.NetworkKit';
-import { hilog } from '@kit.PerformanceAnalysisKit';
-import { image } from '@kit.ImageKit';
-
-// Local imports
-import { ServiceClass } from '../service/ServiceClass';
-import { ModelInterface } from '../model/Model';
+## STRUCTURE
 ```
-- Group imports: HarmonyOS kits first, then local imports
-- Use relative paths for local modules
-
-### Naming Conventions
-- **Classes/Interfaces**: PascalCase (e.g., `WallpaperService`, `ImageSizeInfo`)
-- **Methods/Functions**: camelCase (e.g., `loadWallpaperList`, `buildQueryString`)
-- **Variables/Properties**: camelCase (e.g., `wallpaperList`, `isLoading`)
-- **Constants**: UPPER_SNAKE_CASE for module-level constants (e.g., `DOMAIN`, `WALLHAVEN_API_BASE_URL`)
-- **Private readonly fields**: PascalCase with private modifier (e.g., `private readonly CARD_MARGIN_HORIZONTAL: number = 6`)
-
-### Type Annotations
-- Explicitly annotate function parameters and return types
-- Use interface definitions for complex types
-- Use `| undefined` for optional properties (e.g., `apiKey: string | undefined`)
-
-```typescript
-async searchWallpapers(params?: SearchParams): Promise<WallpaperItem[]> {
-  // implementation
-}
-
-interface SearchParams {
-  q?: string;
-  purity?: string;
-  page?: number;
-}
+./
+├── entry/                    # 主模块
+│   └── src/main/
+│       ├── ets/
+│       │   ├── entryability/       # UIAbility 生命周期
+│       │   ├── entrybackupability/ # BackupExtensionAbility（非标准命名）
+│       │   ├── pages/             # UI 页面
+│       │   ├── service/           # 业务逻辑（WallhavenService）
+│       │   ├── model/             # 数据接口
+│       │   └── utils/            # 工具类（HttpUtil, AppConfig 单例）
+│       └── resources/            # 应用资源（media, elements）
+├── oh_modules/                   # 依赖（@ohos/hypium, @ohos/hamock）
+└── AppScope/                    # 应用级配置
 ```
 
-### Component Decorators
-```typescript
-@Entry
-@Component
-struct PageName {
-  @State stateVariable: Type = defaultValue;
-  private readonly CONSTANT_NAME: Type = value;
+## WHERE TO LOOK
+| 任务 | 位置 | 备注 |
+|------|----------|-------|
+| 应用入口 | `entry/src/main/ets/entryability/EntryAbility.ets` | 加载 `pages/Index` |
+| 主界面 | `entry/src/main/ets/pages/Index.ets` | 壁纸列表，WaterFlow 布局 |
+| API 服务 | `entry/src/main/ets/service/WallhavenService.ets` | Wallhaven API 封装 |
+| HTTP 客户端 | `entry/src/main/ets/utils/HttpUtil.ets` | @kit.NetworkKit 封装 |
+| 数据模型 | `entry/src/main/ets/model/WallpaperModel.ets` | WallpaperItem, SearchParams 接口 |
+| 配置 | `entry/src/main/ets/utils/AppConfig.ets` | 单例模式，服务工厂 |
+| 构建配置 | `build-profile.json5`, `entry/build-profile.json5` | HarmonyOS SDK 6.0.2 (API 22) |
+| Lint 配置 | `code-linter.json5` | ESLint + TypeScript + 安全规则 |
 
-  build() {
-    // UI code
-  }
-}
+## CODE MAP
+(无 LSP - 手动分析)
+
+| 符号 | 类型 | 位置 | 角色 |
+|--------|------|----------|------|
+| EntryAbility | class | entryability/EntryAbility.ets | 主 UIAbility，加载 Index 页面 |
+| EntryBackupAbility | class | entrybackupability/EntryBackupAbility.ets | BackupExtensionAbility |
+| Index | struct | pages/Index.ets | 主壁纸列表页（WaterFlow） |
+| HomePage | struct | pages/HomePage.ets | 首页 |
+| SettingsPage | struct | pages/SettingsPage.ets | 设置页 |
+| WallhavenService | class | service/WallhavenService.ets | API 客户端，搜索/详情方法 |
+| HttpUtil | class | utils/HttpUtil.ets | GET/POST 封装，详细日志 |
+| AppConfig | class | utils/AppConfig.ets | 单例，服务工厂 |
+| WallpaperItem | interface | model/WallpaperModel.ets | 核心数据结构 |
+
+## CONVENTIONS (deviations from standard)
+
+**命名：**
+- 私有只读字段：PascalCase 带修饰符（`private readonly CARD_MARGIN: number = 6`）
+- 模块常量：UPPER_SNAKE_CASE（`DOMAIN = 0x0000`）
+- 文件扩展名：所有源文件使用 `.ets`
+
+**架构：**
+- AppConfig 使用单例模式
+- 服务层分离 API 调用和 UI
+- 模型使用 `| undefined` 表示可选字段
+- Index 页面在 API 失败时使用回退数据
+- 使用 @Builder 装饰器实现可复用 UI 组件
+
+**非标准：**
+- `entrybackupability/` 目录应改为 `extensions/` 或合并到 `entryability/`
+- `resources/base/media/` 中的大型静态资源（25MB+）应使用 `rawfile/` 或运行时下载
+
+**日志：**
+- 生命周期事件：`hilog.info(DOMAIN, 'testTag', '%{public}s', message)`
+- 通用调试：`console.info/error()`（允许中文注释）
+
+## ANTI-PATTERNS (THIS PROJECT)
+未发现明确的 TODO/FIXME/DEPRECATED 注释。
+安全 lint 规则：禁止不安全的加密操作（AES, hash, MAC, DH, DSA, ECDSA, RSA, 3DES）。
+
+## UNIQUE STYLES
+- WaterFlow 基于宽高比计算高度
+- HttpUtil 包含详细的 HTTP 请求日志
+- 未使用 Object.assign - 手动合并选项
+- 服务在错误时返回空数组/null 而非抛出异常
+- API key 可选（无 key 也可工作）
+
+## COMMANDS
+```bash
+# 构建
+hvigor buildDebug    # Debug 构建
+hvigor buildRelease  # Release 构建
+hvigor deploy        # 部署
+
+# Lint（构建时自动运行）
+# 配置在 code-linter.json5
 ```
 
-### Error Handling
-- Use try-catch blocks for async operations
-- Log errors with `console.error()` or `hilog.error()`
-- Provide fallback values or error states where appropriate
-- Avoid rethrowing errors unless necessary for handling upstream
-
-```typescript
-async loadData() {
-  try {
-    this.isLoading = true;
-    const data = await this.service.fetchData();
-    this.processData(data);
-  } catch (error) {
-    console.error('Failed to load data:', error);
-    // Set error state or fallback
-  } finally {
-    this.isLoading = false;
-  }
-}
-```
-
-### Logging
-- Use `hilog.info()` for important lifecycle events with domain and tag
-- Use `console.info()` for general debug information
-- Use `console.error()` for error conditions
-- Include context in log messages
-
-```typescript
-const DOMAIN = 0x0000;
-hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
-console.info(`图片加载完成: ${item.name}`);
-```
-
-### Comments
-- Use JSDoc-style comments for functions and interfaces
-- Include `@param` and `@return` annotations
-- Add brief inline comments for complex logic
-- Write comments in Chinese when appropriate for this project
-
-```typescript
-/**
- * 搜索壁纸
- * @param params 搜索参数
- */
-async searchWallpapers(params?: SearchParams): Promise<WallpaperItem[]> {
-  // implementation
-}
-```
-
-### UI/UX Patterns
-- Use `@Builder` decorators for reusable UI components
-- Chain UI component methods for styling
-- Use proper accessibility attributes
-- Handle loading and error states in UI
-
-```typescript
-@Builder
-CustomComponent(item: ItemType) {
-  Column() {
-    // UI content
-  }
-  .width('100%')
-  .margin({ top: 8 })
-  .onClick(() => {
-    // handle click
-  })
-}
-```
-
-### Security Guidelines
-The project enforces security rules via linting:
-- Avoid unsafe cryptographic operations (AES, hash, MAC, DH, DSA, ECDSA, RSA)
-- Follow HarmonyOS security best practices
-
-### Configuration Files
-- Project config: `build-profile.json5`
-- Module config: `entry/build-profile.json5`
-- Lint config: `code-linter.json5`
-- Dependencies: `oh-package.json5` (HarmonyOS package format)
-
-### Testing Patterns
-```typescript
-import { describe, beforeAll, beforeEach, afterEach, afterAll, it, expect } from '@ohos/hypium';
-
-export default function testSuite() {
-  describe('TestSuiteName', () => {
-    beforeAll(() => { /* setup once */ });
-    beforeEach(() => { /* setup each test */ });
-    afterEach(() => { /* cleanup each test */ });
-    afterAll(() => { /* cleanup once */ });
-
-    it('testName', 0, () => {
-      // test implementation
-      expect(actual).assertEqual(expected);
-    });
-  });
-}
-```
-
-### Key Dependencies
-- `@ohos/hypium` - Testing framework
-- `@ohos/hamock` - Mocking framework
-- HarmonyOS SDK kits via `@kit.*` imports
-
-## Project-Specific Notes
-- Target SDK: HarmonyOS 6.0.2 (API Level 22)
-- App uses wallhaven.cc API for wallpapers
-- Singleton pattern used for AppConfig
-- HTTP requests use HttpUtil wrapper around @kit.NetworkKit
-- UI uses ArkUI with declarative syntax
+## NOTES
+- 目标 SDK：HarmonyOS 6.0.2 (API Level 22)
+- 使用 wallhaven.cc API（基础使用无需 API key）
+- 测试使用 Hypium 框架（`@ohos/hypium`）
+- Mock 数据位于 `entry/src/mock/` 目录
+- Lint 忽略 test/mock/node_modules/build 目录
+- HttpUtil 维护单个静态 HttpRequest 实例
+- AppConfig.getApiKey() 返回 undefined（硬编码 API key 已禁用）

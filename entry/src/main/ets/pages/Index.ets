@@ -1,255 +1,397 @@
 import { image } from '@kit.ImageKit';
-import { WallpaperItem } from '../model/WallpaperModel';
+import { WallpaperItem, SearchParams } from '../model/WallpaperModel';
 import { WallhavenService } from '../service/WallhavenService';
 import { AppConfig } from '../utils/AppConfig';
+
+// 选择器选项接口
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+// Builder函数参数接口
+interface FilterSectionParams {
+  title: string;
+}
+
+interface SelectButtonGroupParams {
+  options: SelectOption[];
+  selected: string;
+  onSelect: (value: string) => void;
+}
+
+interface WallpaperCardParams {
+  wallpaper: WallpaperItem;
+}
 
 @Entry
 @Component
 struct Index {
-  @State message: string = '壁纸应用';
-  @State wallpaperList: WallpaperItem[] = [];
+  @State wallpapers: WallpaperItem[] = [];
   @State isLoading: boolean = false;
+  @State errorMessage: string = '';
 
-  // 统一定义间距常量
-  private readonly CARD_MARGIN_HORIZONTAL: number = 6; // 卡片水平间距
-  private readonly CARD_MARGIN_VERTICAL: number = 6;  // 卡片垂直间距
-  private readonly CARD_PADDING: number = 8;          // 卡片内边距
+  // 筛选条件状态
+  @State selectedCategories: number = 111; // 分类选择：100(通用)/110(动漫)/111(全部)
+  @State isFilterExpanded: boolean = false; // 筛选面板展开状态
+  @State selectedPurity: string = '100'; // 纯净度
+  @State selectedSorting: string = 'date_added'; // 排序方式
+  @State selectedOrder: string = 'desc'; // 排序顺序
+  @State selectedResolution: string = ''; // 分辨率
 
-  // 获取Wallhaven服务实例
   private wallhavenService: WallhavenService = AppConfig.getInstance().getWallhavenService();
 
+  // 筛选选项数组
+  private purityOptions: SelectOption[] = [
+    { value: '100', label: 'SFW (安全)' },
+    { value: '110', label: 'Sketchy (成人)' },
+    { value: '111', label: '全部' }
+  ];
+
+  private sortingOptions: SelectOption[] = [
+    { value: 'date_added', label: '按日期添加' },
+    { value: 'relevance', label: '按相关性' },
+    { value: 'random', label: '随机' },
+    { value: 'views', label: '按浏览量' },
+    { value: 'favorites', label: '按收藏数' },
+    { value: 'toplist', label: '热门榜单' }
+  ];
+
+  private orderOptions: SelectOption[] = [
+    { value: 'desc', label: '降序' },
+    { value: 'asc', label: '升序' }
+  ];
+
+  private resolutionOptions: SelectOption[] = [
+    { value: '', label: '全部' },
+    { value: '1920x1080', label: '1920x1080' },
+    { value: '1920x1200', label: '1920x1200' },
+    { value: '2560x1440', label: '2560x1440' },
+    { value: '3840x2160', label: '4K (3840x2160)' }
+  ];
+
   aboutToAppear() {
-    // 从wallhaven API获取壁纸列表
-    this.loadWallpaperListFromApi();
+    console.info('[Index] 页面加载完成');
+    this.loadWallpapers();
   }
 
-  async loadWallpaperListFromApi() {
+  async loadWallpapers() {
+    if (this.isLoading) return;
+
+    this.isLoading = true;
+    this.errorMessage = '';
+
     try {
-      this.isLoading = true;
+      console.info('[Index] 开始加载壁纸');
 
-      // 调用wallhaven API获取壁纸列表
-      const wallpapers = await this.wallhavenService.searchWallpapers({
-        purity: '100',  // 只获取SFW壁纸
-        sorting: 'date_added',  // 按日期排序
-        order: 'desc',  // 降序排列
-        page: 1  // 第一页
-      });
+      // 构建搜索参数
+      const searchParams: SearchParams = {
+        purity: this.selectedPurity,
+        sorting: this.selectedSorting,
+        order: this.selectedOrder,
+        categories: this.selectedCategories.toString(),
+        page: 1
+      };
 
-      this.wallpaperList = wallpapers;
+      // 仅在选择分辨率时添加
+      if (this.selectedResolution && this.selectedResolution.length > 0) {
+        (searchParams as Record<string, string>).resolutions = this.selectedResolution;
+      }
+
+      this.wallpapers = await this.wallhavenService.searchWallpapers(searchParams);
+      console.info(`[Index] 壁纸加载完成，共 ${this.wallpapers.length} 张`);
+
     } catch (error) {
-      console.error('[Index] 从API加载壁纸失败:', error);
+      console.error('[Index] 加载壁纸失败:', error);
+      this.errorMessage = '加载壁纸失败，请检查网络连接';
 
-      // 如果API调用失败，使用默认列表
-      const fallbackWallpapers: WallpaperItem[] = [
-        {
-          id: '1',
-          name: '风景壁纸1',
-          imageUrl: 'https://w.wallhaven.cc/full/8g/wallhaven-8go6ro.jpg',
-          aspectRatio: 1.78,
-          calculatedHeight: Math.round(150 / 1.78)
-        },
-        {
-          id: '2',
-          name: '风景壁纸2',
-          imageUrl: 'https://w.wallhaven.cc/full/ly/wallhaven-lyzdl2.jpg',
-          aspectRatio: 1.0,
-          calculatedHeight: 150
-        },
-        {
-          id: '3',
-          name: '风景壁纸3',
-          imageUrl: 'https://w.wallhaven.cc/full/rq/wallhaven-rqgpm7.jpg',
-          aspectRatio: 1.78,
-          calculatedHeight: Math.round(150 / 1.78)
-        },
-      ];
-      this.wallpaperList = fallbackWallpapers;
+      // 使用回退数据
+      this.wallpapers = this.getFallbackWallpapers();
     } finally {
       this.isLoading = false;
     }
   }
 
-  /**
-   * 执行搜索
-   * @param query 搜索关键词
-   */
-  async performSearch(query: string) {
-    try {
-      this.isLoading = true;
-
-      // 调用wallhaven API搜索壁纸
-      const wallpapers = await this.wallhavenService.searchWallpapers({
-        q: query,        // 搜索关键词
-        purity: '100',   // 只获取SFW壁纸
-        sorting: 'relevance',  // 按相关性排序
-        order: 'desc',   // 降序排列
-        page: 1         // 第一页
-      });
-
-      this.wallpaperList = wallpapers;
-    } catch (error) {
-      console.error(`[Index] 搜索 "${query}" 失败:`, error);
-    } finally {
-      this.isLoading = false;
-    }
+  // 回退壁纸数据（当API不可用时使用）
+  private getFallbackWallpapers(): WallpaperItem[] {
+    return [
+      {
+        id: 'fallback1',
+        name: '默认壁纸1',
+        imageUrl: 'https://example.com/fallback1.jpg',
+        width: 1920,
+        height: 1080,
+        aspectRatio: 1.78,
+        calculatedHeight: 84
+      },
+      {
+        id: 'fallback2',
+        name: '默认壁纸2',
+        imageUrl: 'https://example.com/fallback2.jpg',
+        width: 1920,
+        height: 1080,
+        aspectRatio: 1.78,
+        calculatedHeight: 84
+      }
+    ];
   }
 
-  // 带间距的壁纸卡片组件
+  // 筛选区域组件
   @Builder
-  WallpaperCardWithMargin(item: WallpaperItem) {
+  FilterSection($$: FilterSectionParams) {
     Column() {
-      this.WallpaperCardContent(item)
+      Text($$.title)
+        .fontSize(14)
+        .fontColor('#666666')
+        .margin({ bottom: 8 })
     }
-    .margin({
-      left: this.CARD_MARGIN_HORIZONTAL,
-      right: this.CARD_MARGIN_HORIZONTAL,
-      top: this.CARD_MARGIN_VERTICAL,
-      bottom: this.CARD_MARGIN_VERTICAL
-    })
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
   }
 
-  // 壁纸卡片内容组件
+  // 选择器组件
   @Builder
-  WallpaperCardContent(item: WallpaperItem) {
+  SelectButtonGroup($$: SelectButtonGroupParams) {
+    Row({ space: 8 }) {
+      ForEach($$.options, (option: SelectOption) => {
+        Button(option.label)
+          .fontSize(12)
+          .height(28)
+          .padding({ left: 12, right: 12 })
+          .backgroundColor($$.selected === option.value ? '#ff2262db' : '#e0e0e0')
+          .fontColor($$.selected === option.value ? '#ffffff' : '#666666')
+          .onClick(() => {
+            $$.onSelect(option.value);
+          })
+      })
+    }
+    .width('100%')
+  }
+
+  // 壁纸卡片组件
+  @Builder
+  WallpaperCard($$: WallpaperCardParams) {
     Column() {
-      // 使用远程图片URL
-      Image(item.imageUrl)
+      Image($$.wallpaper.imageUrl)
         .width('100%')
-        .height(item.calculatedHeight ? item.calculatedHeight : 180)
+        .height($$.wallpaper.calculatedHeight ? $$.wallpaper.calculatedHeight : 100)
         .objectFit(ImageFit.Cover)
         .borderRadius(8)
-        .onComplete(() => {
-          console.info(`[Index] 图片加载完成: ${item.name}`);
-        })
-        .onError(() => {
-          console.error(`[Index] 图片加载失败: ${item.name}`);
-        })
+        .backgroundColor('#f0f0f0')
 
-      // 壁纸信息
-      Row() {
-        Column() {
-          Text(item.name)
-            .fontSize(13)
-            .fontWeight(FontWeight.Medium)
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
+      Text($$.wallpaper.name)
+        .fontSize(12)
+        .fontColor('#333')
+        .margin({ top: 4 })
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-          if (item.aspectRatio) {
-            Text(`宽高比: ${item.aspectRatio.toFixed(2)}`)
-              .fontSize(11)
-              .fontColor('#888888')
-              .margin({ top: 2 })
-
-            // 显示分辨率信息
-            if (item.resolution) {
-              Text(`分辨率: ${item.resolution}`)
-                .fontSize(11)
-                .fontColor('#888888')
-                .margin({ top: 2 })
-            }
-          }
-        }
-        .layoutWeight(1)
-        .margin({ right: 8 })
-
-        // 下载按钮
-        Button('下载')
-          .width(58)
-          .height(28)
-          .fontSize(12)
-          .fontColor('#ffffff')
-          .backgroundColor('#ff2262db')
-          .borderRadius(14)
-          .padding({ left: 8, right: 8 })
-          .onClick(() => {
-            console.info(`[Index] 正在下载壁纸: ${item.name} (${item.id})`);
-          })
-      }
-      .width('100%')
-      .margin({ top: 6 })
+      Text(`${$$.wallpaper.width}x${$$.wallpaper.height}`)
+        .fontSize(10)
+        .fontColor('#666')
+        .margin({ top: 2 })
     }
-    .backgroundColor('#ffffff')
-    .padding(this.CARD_PADDING)
-    .borderRadius(8)
     .width('100%')
-    .shadow({
-      radius: 3,
-      color: '#1F000000',
-      offsetX: 0,
-      offsetY: 1
-    })
-    .onClick(() => {
-      console.log(`[Index] 点击了壁纸: ${item.name} (${item.id})`);
-    })
-  }
-
-  // 原始壁纸卡片组件（保持兼容性）
-  @Builder
-  WallpaperCard(item: WallpaperItem) {
-    this.WallpaperCardContent(item)
+    .padding(6)
   }
 
   build() {
     Column() {
       // 顶部导航栏
-      Row() {
-        Text(this.message)
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
-          .backgroundColor('#ffffff')
-
-        // 搜索图标
-        Image($r('app.media.foreground'))
-          .width(24)
-          .height(24)
-          .onClick(() => {
-            this.performSearch('nature'); // 示例搜索
-          })
-      }
-      .width('100%')
-      .height(50)
-      .padding({ left: 16, right: 16 })
-      .alignItems(VerticalAlign.Center)
-      .backgroundColor('#ffffff')
-
-      // 显示加载状态
-      if (this.isLoading) {
-        Column() {
-          Text('正在加载壁纸...')
-            .fontSize(16)
-            .fontColor('#666666')
-          Progress({
-            value: 50,
-            total: 100
-          })
-          .width(100)
-          .height(10)
-          .margin({ top: 10 })
+      Column() {
+        Row() {
+          Text('壁纸应用')
+            .fontSize(20)
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
+            .backgroundColor('#ffffff')
         }
         .width('100%')
-        .height('100%')
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
-      } else {
-        // 使用WaterFlow组件实现两列瀑布流布局
-        WaterFlow() {
-          ForEach(this.wallpaperList, (item: WallpaperItem) => {
-            FlowItem() {
-              this.WallpaperCardWithMargin(item)
-            }
-          })
+        .height(50)
+        .padding({ left: 16, right: 16 })
+        .alignItems(VerticalAlign.Center)
+        .backgroundColor('#ffffff')
+
+        // 基础筛选栏（始终显示）
+        Row() {
+          // 分类选择
+          Row({ space: 8 }) {
+            Text('分类:')
+              .fontSize(14)
+              .fontColor('#666666')
+
+            Button('全部')
+              .fontSize(12)
+              .height(28)
+              .padding({ left: 10, right: 10 })
+              .backgroundColor(this.selectedCategories === 111 ? '#ff2262db' : '#f0f0f0')
+              .fontColor(this.selectedCategories === 111 ? '#ffffff' : '#666666')
+              .onClick(() => {
+                this.selectedCategories = 111;
+                this.loadWallpapers();
+              })
+
+            Button('通用')
+              .fontSize(12)
+              .height(28)
+              .padding({ left: 10, right: 10 })
+              .backgroundColor(this.selectedCategories === 100 ? '#ff2262db' : '#f0f0f0')
+              .fontColor(this.selectedCategories === 100 ? '#ffffff' : '#666666')
+              .onClick(() => {
+                this.selectedCategories = 100;
+                this.loadWallpapers();
+              })
+
+            Button('动漫')
+              .fontSize(12)
+              .height(28)
+              .padding({ left: 10, right: 10 })
+              .backgroundColor(this.selectedCategories === 110 ? '#ff2262db' : '#f0f0f0')
+              .fontColor(this.selectedCategories === 110 ? '#ffffff' : '#666666')
+              .onClick(() => {
+                this.selectedCategories = 110;
+                this.loadWallpapers();
+              })
+          }
+          .layoutWeight(1)
+
+          // 下拉按钮
+          Button(this.isFilterExpanded ? '收起筛选 ▲' : '更多筛选 ▼')
+            .fontSize(12)
+            .height(28)
+            .padding({ left: 12, right: 12 })
+            .backgroundColor('#f0f0f0')
+            .fontColor('#666666')
+            .onClick(() => {
+              this.isFilterExpanded = !this.isFilterExpanded;
+            })
         }
-        .columnsTemplate('1fr 1fr') // 两列等宽布局
-        .columnsGap(0) // 使用卡片margin控制列间距
-        .rowsGap(0)   // 使用卡片margin控制行间距
-        .padding({ left: 0, right: 0, top: 8, bottom: 8 }) // 只保留上下边距
-        .layoutWeight(1)
+        .width('100%')
+        .padding({ left: 16, right: 16, top: 8, bottom: 8 })
       }
+      .width('100%')
+      .backgroundColor('#ffffff')
+
+      // 展开的筛选面板
+      if (this.isFilterExpanded) {
+        Column() {
+          // 分隔线
+          Divider()
+            .color('#eeeeee')
+
+          Column() {
+            // 排序方式
+            this.FilterSection({ title: '排序方式' })
+            this.SelectButtonGroup({ 
+              options: this.sortingOptions, 
+              selected: this.selectedSorting, 
+              onSelect: (value: string) => {
+                this.selectedSorting = value;
+                this.loadWallpapers();
+              }
+            } as SelectButtonGroupParams)
+
+            // 分隔线
+            Divider()
+              .color('#eeeeee')
+              .margin({ top: 8, bottom: 8 })
+
+            // 排序顺序
+            this.FilterSection({ title: '排序顺序' })
+            this.SelectButtonGroup({ 
+              options: this.orderOptions, 
+              selected: this.selectedOrder, 
+              onSelect: (value: string) => {
+                this.selectedOrder = value;
+                this.loadWallpapers();
+              }
+            } as SelectButtonGroupParams)
+
+            // 分隔线
+            Divider()
+              .color('#eeeeee')
+              .margin({ top: 8, bottom: 8 })
+
+            // 纯净度
+            this.FilterSection({ title: '纯净度' })
+            this.SelectButtonGroup({ 
+              options: this.purityOptions, 
+              selected: this.selectedPurity, 
+              onSelect: (value: string) => {
+                this.selectedPurity = value;
+                this.loadWallpapers();
+              }
+            } as SelectButtonGroupParams)
+
+            // 分隔线
+            Divider()
+              .color('#eeeeee')
+              .margin({ top: 8, bottom: 8 })
+
+            // 分辨率
+            this.FilterSection({ title: '分辨率' })
+            this.SelectButtonGroup({ 
+              options: this.resolutionOptions, 
+              selected: this.selectedResolution, 
+              onSelect: (value: string) => {
+                this.selectedResolution = value;
+                this.loadWallpapers();
+              }
+            } as SelectButtonGroupParams)
+          }
+          .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+          .backgroundColor('#fafafa')
+        }
+        .width('100%')
+        .backgroundColor('#ffffff')
+      }
+
+      // 错误信息显示
+      if (this.errorMessage) {
+        Text(this.errorMessage)
+          .fontSize(14)
+          .fontColor('#ff0000')
+          .margin({ bottom: 10 })
+          .textAlign(TextAlign.Center)
+      }
+
+      // 加载状态
+      if (this.isLoading) {
+        Progress({ value: 0, total: 100 })
+          .width(60)
+          .height(60)
+          .margin({ bottom: 20 })
+      }
+
+      // 壁纸列表（使用Grid替代WaterFlow）
+      Grid() {
+        ForEach(this.wallpapers, (wallpaper: WallpaperItem) => {
+          GridItem() {
+            this.WallpaperCard({ wallpaper: wallpaper } as WallpaperCardParams)
+          }
+          .onClick(() => {
+            console.info(`[Index] 点击壁纸: ${wallpaper.id}`);
+            // 这里可以添加壁纸详情页面跳转
+          })
+        })
+      }
+      .columnsTemplate('1fr 1fr')
+      .width('100%')
+      .layoutWeight(1)
+      .margin({ left: 12, right: 12 })
+
+      // 刷新按钮
+      Button('刷新壁纸')
+        .width(200)
+        .height(40)
+        .margin({ top: 10, bottom: 20 })
+        .onClick(() => {
+          this.loadWallpapers();
+        })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f0f0f0')
+    .alignItems(HorizontalAlign.Center)
   }
 }

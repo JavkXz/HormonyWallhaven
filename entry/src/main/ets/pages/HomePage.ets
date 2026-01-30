@@ -1,4 +1,3 @@
-@Entry
 @Component
 struct HomePage {
   @State message: string = 'HarmonyOS壁纸应用';
