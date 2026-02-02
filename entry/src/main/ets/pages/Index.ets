@@ -214,48 +214,11 @@ struct Index {
           .height(wallpaper.calculatedHeight || 100)
           .objectFit(ImageFit.Fill)
           .borderRadius({ topLeft: 12, topRight: 12 })
-
-        // 纯净度标签
-        Text(wallpaper.purity === 'sfw' ? 'SFW' : wallpaper.purity === 'sketchy' ? 'Sketchy' : 'NSFW')
-          .fontSize(10)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#ffffff')
-          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-          .backgroundColor(wallpaper.purity === 'sfw' ? '#4CAF50' : wallpaper.purity === 'sketchy' ? '#FF9800' : '#F44336')
-          .borderRadius(4)
-          .position({ x: 8, y: 8 })
-
-        // 收藏数
-        if (wallpaper.favorites && wallpaper.favorites > 0) {
-          Row() {
-            Text('❤')
-              .fontSize(10)
-              .fontColor('#ffffff')
-            Text(`${wallpaper.favorites}`)
-              .fontSize(10)
-              .fontColor('#ffffff')
-              .margin({ left: 2 })
-          }
-          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-          .backgroundColor('rgba(0, 0, 0, 0.6)')
-          .borderRadius(4)
-          .position({ x: '100%', y: 8 })
-          .markAnchor({ x: '100%', y: 0 })
-          .margin({ right: 8 })
-        }
       }
       .width('100%')
 
       // 信息区域
       Column() {
-        Text(wallpaper.name)
-          .fontSize(14)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#1a1a1a')
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .width('100%')
-
         Row() {
           // 分辨率标签
           Text(`${wallpaper.width}x${wallpaper.height}`)
@@ -265,16 +228,37 @@ struct Index {
             .backgroundColor('#2262db')
             .borderRadius(4)
 
-          Blank()
+          // 纯净度标签
+          Text(wallpaper.purity === 'sfw' ? 'SFW' : wallpaper.purity === 'sketchy' ? 'Sketchy' : 'NSFW')
+            .fontSize(10)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#ffffff')
+            .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+            .backgroundColor(wallpaper.purity === 'sfw' ? '#4CAF50' : wallpaper.purity === 'sketchy' ? '#FF9800' : '#F44336')
+            .borderRadius(4)
+            .margin({ left: 8 })
 
-          // 分类标签
-          Text(wallpaper.category === 'general' ? '通用' : wallpaper.category === 'anime' ? '动漫' : '人物')
-            .fontSize(11)
-            .fontColor('#666666')
+          Blank()
         }
         .width('100%')
-        .margin({ top: 6 })
+
+        // 收藏数
+        if (wallpaper.favorites && wallpaper.favorites > 0) {
+          Row() {
+            Blank()
+            Text('❤')
+              .fontSize(10)
+              .fontColor('#F44336')
+            Text(`${wallpaper.favorites}`)
+              .fontSize(10)
+              .fontColor('#666666')
+              .margin({ left: 2 })
+          }
+          .width('100%')
+          .margin({ top: 6 })
+        }
       }
+      .width('100%')
       .padding(12)
       .backgroundColor('#ffffff')
       .borderRadius({ bottomLeft: 12, bottomRight: 12 })
