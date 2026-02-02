@@ -201,18 +201,23 @@ export class WallhavenService {
       // 瀑布流布局：宽度固定，高度根据图片原始比例计算
       const CARD_WIDTH = 150;
       const calculatedHeight = Math.round(CARD_WIDTH / aspectRatio);
+
+      // 优先使用 original 缩略图 (通常保持原始宽高比)，其次是 large (可能被裁剪)，最后回退到原图
+      const thumbUrl = apiItem.thumbs?.original || apiItem.thumbs?.large || apiItem.path;
       
       const wallpaperItem: WallpaperItem = {
         id: apiItem.id,
         name: `Wallpaper ${apiItem.id}`,
         imageUrl: apiItem.path, // 使用原图路径
+        thumbUrl: thumbUrl,     // 列表展示用缩略图
         width: width,
         height: height,
         aspectRatio: aspectRatio,
         calculatedHeight: calculatedHeight,
         uploader: apiItem.uploader?.username || 'Unknown',
-        tags: apiItem.tags?.map(tag => tag.name) || [],
+        tags: apiItem.tags || [],
         favorites: apiItem.favorites || 0,
+        views: apiItem.views || 0,
         purity: apiItem.purity || 'sfw',
         category: apiItem.category || 'general',
         colors: apiItem.colors || [],

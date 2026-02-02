@@ -2,14 +2,16 @@
 export interface WallpaperItem {
   id: string;           // 壁纸ID
   name: string;         // 壁纸名称
-  imageUrl: string;     // 壁纸图片URL
+  imageUrl: string;     // 壁纸图片URL (原图)
+  thumbUrl: string;     // 壁纸缩略图URL (列表用)
   width?: number;       // 图片原始宽度
   height?: number;      // 图片原始高度
   aspectRatio?: number; // 图片宽高比
   calculatedHeight?: number; // 计算后的高度
   uploader?: string;    // 上传者
-  tags?: string[];      // 标签
+  tags?: TagInfo[];     // 标签 (完整信息)
   favorites?: number;   // 收藏数
+  views?: number;       // 浏览量
   purity?: string;      // 纯净度 (sfw/sketchy/nsfw)
   category?: string;    // 类别 (general/anime/people)
   colors?: string[];    // 主要颜色
