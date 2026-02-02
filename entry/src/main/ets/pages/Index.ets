@@ -122,7 +122,7 @@ struct Index {
         width: 1920,
         height: 1080,
         aspectRatio: 1.78,
-        calculatedHeight: 84
+        calculatedHeight: 150
       },
       {
         id: 'fallback2',
@@ -131,16 +131,16 @@ struct Index {
         width: 1920,
         height: 1080,
         aspectRatio: 1.78,
-        calculatedHeight: 84
+        calculatedHeight: 150
       }
     ];
   }
 
   // 筛选区域组件
   @Builder
-  FilterSection($$: FilterSectionParams) {
+  FilterSection(title: string) {
     Column() {
-      Text($$.title)
+      Text(title)
         .fontSize(14)
         .fontColor('#666666')
         .margin({ bottom: 8 })
@@ -151,17 +151,17 @@ struct Index {
 
   // 选择器组件
   @Builder
-  SelectButtonGroup($$: SelectButtonGroupParams) {
+  SelectButtonGroup(options: SelectOption[], selected: string, onSelect: (value: string) => void) {
     Row({ space: 8 }) {
-      ForEach($$.options, (option: SelectOption) => {
+      ForEach(options, (option: SelectOption) => {
         Button(option.label)
           .fontSize(12)
           .height(28)
           .padding({ left: 12, right: 12 })
-          .backgroundColor($$.selected === option.value ? '#ff2262db' : '#e0e0e0')
-          .fontColor($$.selected === option.value ? '#ffffff' : '#666666')
+          .backgroundColor(selected === option.value ? '#ff2262db' : '#e0e0e0')
+          .fontColor(selected === option.value ? '#ffffff' : '#666666')
           .onClick(() => {
-            $$.onSelect(option.value);
+            onSelect(option.value);
           })
       })
     }
@@ -170,29 +170,37 @@ struct Index {
 
   // 壁纸卡片组件
   @Builder
-  WallpaperCard($$: WallpaperCardParams) {
+  WallpaperCard(wallpaper: WallpaperItem) {
     Column() {
-      Image($$.wallpaper.imageUrl)
+      Image(wallpaper.imageUrl)
         .width('100%')
-        .height($$.wallpaper.calculatedHeight ? $$.wallpaper.calculatedHeight : 100)
-        .objectFit(ImageFit.Cover)
-        .borderRadius(8)
-        .backgroundColor('#f0f0f0')
+        .height(wallpaper.calculatedHeight || 100)
+        .objectFit(ImageFit.Fill)
+        .borderRadius({ topLeft: 8, topRight: 8 })
 
-      Text($$.wallpaper.name)
-        .fontSize(12)
+      Text(wallpaper.name)
+        .fontSize(13)
+        .fontWeight(FontWeight.Medium)
         .fontColor('#333')
-        .margin({ top: 4 })
+        .margin({ top: 8 })
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-      Text(`${$$.wallpaper.width}x${$$.wallpaper.height}`)
-        .fontSize(10)
-        .fontColor('#666')
-        .margin({ top: 2 })
+      Text(`${wallpaper.width}x${wallpaper.height}`)
+        .fontSize(11)
+        .fontColor('#999')
+        .margin({ top: 4 })
     }
     .width('100%')
-    .padding(6)
+    .padding(8)
+    .backgroundColor('#ffffff')
+    .borderRadius(8)
+    .shadow({
+      radius: 6,
+      color: 'rgba(0, 0, 0, 0.12)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 
   build() {
@@ -282,15 +290,24 @@ struct Index {
 
           Column() {
             // 排序方式
-            this.FilterSection({ title: '排序方式' })
-            this.SelectButtonGroup({ 
-              options: this.sortingOptions, 
-              selected: this.selectedSorting, 
-              onSelect: (value: string) => {
-                this.selectedSorting = value;
-                this.loadWallpapers();
-              }
-            } as SelectButtonGroupParams)
+            this.FilterSection('排序方式')
+
+            // 按钮组
+            Row({ space: 8 }) {
+              ForEach(this.sortingOptions, (option: SelectOption) => {
+                Button(option.label)
+                  .fontSize(12)
+                  .height(28)
+                  .padding({ left: 12, right: 12 })
+                  .backgroundColor(this.selectedSorting === option.value ? '#ff2262db' : '#e0e0e0')
+                  .fontColor(this.selectedSorting === option.value ? '#ffffff' : '#666666')
+                  .onClick(() => {
+                    this.selectedSorting = option.value;
+                    this.loadWallpapers();
+                  })
+              })
+            }
+            .width('100%')
 
             // 分隔线
             Divider()
@@ -298,15 +315,24 @@ struct Index {
               .margin({ top: 8, bottom: 8 })
 
             // 排序顺序
-            this.FilterSection({ title: '排序顺序' })
-            this.SelectButtonGroup({ 
-              options: this.orderOptions, 
-              selected: this.selectedOrder, 
-              onSelect: (value: string) => {
-                this.selectedOrder = value;
-                this.loadWallpapers();
-              }
-            } as SelectButtonGroupParams)
+            this.FilterSection('排序顺序')
+
+            // 按钮组
+            Row({ space: 8 }) {
+              ForEach(this.orderOptions, (option: SelectOption) => {
+                Button(option.label)
+                  .fontSize(12)
+                  .height(28)
+                  .padding({ left: 12, right: 12 })
+                  .backgroundColor(this.selectedOrder === option.value ? '#ff2262db' : '#e0e0e0')
+                  .fontColor(this.selectedOrder === option.value ? '#ffffff' : '#666666')
+                  .onClick(() => {
+                    this.selectedOrder = option.value;
+                    this.loadWallpapers();
+                  })
+              })
+            }
+            .width('100%')
 
             // 分隔线
             Divider()
@@ -314,15 +340,24 @@ struct Index {
               .margin({ top: 8, bottom: 8 })
 
             // 纯净度
-            this.FilterSection({ title: '纯净度' })
-            this.SelectButtonGroup({ 
-              options: this.purityOptions, 
-              selected: this.selectedPurity, 
-              onSelect: (value: string) => {
-                this.selectedPurity = value;
-                this.loadWallpapers();
-              }
-            } as SelectButtonGroupParams)
+            this.FilterSection('纯净度')
+
+            // 按钮组
+            Row({ space: 8 }) {
+              ForEach(this.purityOptions, (option: SelectOption) => {
+                Button(option.label)
+                  .fontSize(12)
+                  .height(28)
+                  .padding({ left: 12, right: 12 })
+                  .backgroundColor(this.selectedPurity === option.value ? '#ff2262db' : '#e0e0e0')
+                  .fontColor(this.selectedPurity === option.value ? '#ffffff' : '#666666')
+                  .onClick(() => {
+                    this.selectedPurity = option.value;
+                    this.loadWallpapers();
+                  })
+              })
+            }
+            .width('100%')
 
             // 分隔线
             Divider()
@@ -330,15 +365,24 @@ struct Index {
               .margin({ top: 8, bottom: 8 })
 
             // 分辨率
-            this.FilterSection({ title: '分辨率' })
-            this.SelectButtonGroup({ 
-              options: this.resolutionOptions, 
-              selected: this.selectedResolution, 
-              onSelect: (value: string) => {
-                this.selectedResolution = value;
-                this.loadWallpapers();
-              }
-            } as SelectButtonGroupParams)
+            this.FilterSection('分辨率')
+
+            // 按钮组
+            Row({ space: 8 }) {
+              ForEach(this.resolutionOptions, (option: SelectOption) => {
+                Button(option.label)
+                  .fontSize(12)
+                  .height(28)
+                  .padding({ left: 12, right: 12 })
+                  .backgroundColor(this.selectedResolution === option.value ? '#ff2262db' : '#e0e0e0')
+                  .fontColor(this.selectedResolution === option.value ? '#ffffff' : '#666666')
+                  .onClick(() => {
+                    this.selectedResolution = option.value;
+                    this.loadWallpapers();
+                  })
+              })
+            }
+            .width('100%')
           }
           .padding({ left: 16, right: 16, top: 12, bottom: 12 })
           .backgroundColor('#fafafa')
@@ -364,12 +408,14 @@ struct Index {
           .margin({ bottom: 20 })
       }
 
-      // 壁纸列表（使用Grid替代WaterFlow）
-      Grid() {
+      // 壁纸列表（使用WaterFlow瀑布流布局）
+      WaterFlow() {
         ForEach(this.wallpapers, (wallpaper: WallpaperItem) => {
-          GridItem() {
-            this.WallpaperCard({ wallpaper: wallpaper } as WallpaperCardParams)
+          FlowItem() {
+            this.WallpaperCard(wallpaper)
           }
+          .width('100%')
+          .height(wallpaper.calculatedHeight ? wallpaper.calculatedHeight + 70 : 170)
           .onClick(() => {
             console.info(`[Index] 点击壁纸: ${wallpaper.id}`);
             // 这里可以添加壁纸详情页面跳转
@@ -377,9 +423,11 @@ struct Index {
         })
       }
       .columnsTemplate('1fr 1fr')
+      .columnsGap(8)
+      .rowsGap(8)
       .width('100%')
       .layoutWeight(1)
-      .margin({ left: 12, right: 12 })
+      .padding(8)
 
       // 刷新按钮
       Button('刷新壁纸')

@@ -196,9 +196,11 @@ export class WallhavenService {
       
       // 计算宽高比
       const aspectRatio = width / height;
-      
-      // 计算预览高度（基础宽度为150vp）
-      const calculatedHeight = Math.round(150 / aspectRatio);
+
+      // 计算预览高度（基于固定宽度 150，根据宽高比计算高度）
+      // 瀑布流布局：宽度固定，高度根据图片原始比例计算
+      const CARD_WIDTH = 150;
+      const calculatedHeight = Math.round(CARD_WIDTH / aspectRatio);
       
       const wallpaperItem: WallpaperItem = {
         id: apiItem.id,
