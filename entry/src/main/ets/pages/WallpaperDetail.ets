@@ -47,45 +47,34 @@ struct WallpaperDetail {
       const imageData = response.result as ArrayBuffer;
       console.info(`[WallpaperDetail] Downloaded ${imageData.byteLength} bytes`);
 
-      // 2. 创建相册资产
+      // 2. 创建相册资产 (使用 helper.createAsset 直接创建)
       const helper = photoAccessHelper.getPhotoAccessHelper(context);
       
-      // 根据编译器提示，当前 SDK 版本的 createImageAssetRequest 第二个参数期望 string。
-      // 通常这代表文件扩展名 (extension) 或显示名称。我们尝试传入扩展名。
-      const assetRequest = photoAccessHelper.MediaAssetChangeRequest.createImageAssetRequest(context, 'jpg');
+      // 注意: createAsset 的第二个参数是扩展名 (不带点)
+      // 这会创建一个空的 Asset 并返回其 URI
+      const assetUri = await helper.createAsset(photoAccessHelper.PhotoType.IMAGE, 'jpg');
+      console.info(`[WallpaperDetail] Created asset URI: ${assetUri}`);
       
-      // 3. 写入数据
-      // 注意: createImageAssetRequest 返回的 changeRequest 并不直接提供写入流，
-      // 我们需要先拿到临时 URI 或者使用 buffer 写入。
-      // API 11+ 正确做法:
-      // 使用 assetRequest.addResource(photoAccessHelper.ResourceType.IMAGE_RESOURCE, dataBuffer) 是不对的，addResource 通常用于文件路径。
-      // 正确流程: 
-      // A. 使用 fs 将数据写入 cache 目录的临时文件
-      // B. 使用 assetRequest.addResource(..., tempFilePath)
-      
-      const tempFileName = `wallhaven_${new Date().getTime()}.jpg`;
-      const tempFilePath = `${context.cacheDir}/${tempFileName}`;
-      
-      const file = fs.openSync(tempFilePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+      // 3. 写入数据到 Asset URI
+      // 使用 fs 打开 URI 进行写入
+      const file = fs.openSync(assetUri, fs.OpenMode.READ_WRITE);
       fs.writeSync(file.fd, imageData);
       fs.closeSync(file);
-      console.info(`[WallpaperDetail] Saved temp file: ${tempFilePath}`);
-
-      assetRequest.addResource(photoAccessHelper.ResourceType.IMAGE_RESOURCE, tempFilePath);
       
-      // 4. 应用更改 (保存到相册)
-      await helper.applyChanges(assetRequest);
+      // 4. 不需要 ChangeRequest，直接写入即完成
+      // 但为了确保系统索引更新，有时可以显式关闭或触发媒体扫描，通常 createAsset 后系统会自动处理。
       
-      // 5. 清理临时文件
-      try {
-        fs.unlinkSync(tempFilePath);
-      } catch (ignore) {}
-
       promptAction.showToast({ message: 'Saved to Gallery successfully!', duration: 2000 });
 
     } catch (error) {
       console.error(`[WallpaperDetail] Save failed: ${JSON.stringify(error)}`);
-      promptAction.showToast({ message: 'Download failed. Check network.', duration: 2000 });
+      // 如果是权限或取消问题，给出特定提示
+      let msg = 'Download failed.';
+      const err = error as BusinessError;
+      if (err && err.code === 13900002) {
+        msg = 'System error: No such file.';
+      }
+      promptAction.showToast({ message: msg, duration: 2000 });
     } finally {
       this.isDownloading = false;
     }
