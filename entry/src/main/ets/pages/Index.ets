@@ -27,6 +27,19 @@ struct Index {
     this.viewModel.loadWallpapers();
   }
 
+  onPageShow() {
+    // 检查是否有返回参数 (例如从详情页点击标签返回)
+    const params = router.getParams() as Record<string, Object>;
+    if (params && params.searchKeyword) {
+      const newKeyword = params.searchKeyword as string;
+      if (newKeyword !== this.viewModel.searchKeyword) {
+        console.info(`[Index] 收到返回搜索请求: ${newKeyword}`);
+        this.viewModel.searchKeyword = newKeyword;
+        this.viewModel.loadWallpapers();
+      }
+    }
+  }
+
   // 同步状态到 ViewModel
   private syncViewModelFilters() {
     this.viewModel.isCategoryGeneral = this.isCategoryGeneral;
@@ -38,93 +51,48 @@ struct Index {
     this.viewModel.selectedSorting = this.currentSorting;
   }
 
-  // 壁纸卡片组件 (Material Design)
-  @Builder
-  WallpaperCard(wallpaper: WallpaperItem) {
-    Stack({ alignContent: Alignment.Bottom }) {
-      // 1. 图片层
-      Image(wallpaper.thumbUrl)
-        .width('100%')
-        .aspectRatio(wallpaper.aspectRatio)
-        .objectFit(ImageFit.Fill)
-        .borderRadius(12)
-        .backgroundColor('#f0f0f0')
-
-      // 2. 渐变遮罩层 (提升文字可读性)
-      Column()
-        .width('100%')
-        .height(60)
-        .borderRadius({ bottomLeft: 12, bottomRight: 12 })
-        .linearGradient({
-          angle: 180, // 从上到下
-          colors: [
-            ['rgba(0,0,0,0)', 0.0],
-            ['rgba(0,0,0,0.6)', 1.0]
-          ]
-        })
-        .hitTestBehavior(HitTestMode.None) // 不拦截点击
-
-      // 3. 信息层 (浮动在底部)
-      Row() {
-        // 分辨率 Chip
-        Text(wallpaper.resolution || `${wallpaper.width}x${wallpaper.height}`)
-          .fontSize(10)
-          .fontColor('rgba(255,255,255,0.9)')
-          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-          .backgroundColor('rgba(0,0,0,0.4)')
-          .borderRadius(4)
-          .backdropBlur(10) // 毛玻璃背景
-
-        Blank()
-
-        // 收藏数
-        if (wallpaper.favorites && wallpaper.favorites > 0) {
-          Row({ space: 2 }) {
-            SymbolGlyph($r('sys.symbol.heart_fill'))
-              .fontSize(12)
-              .fontColor(['#FF5252'])
-            Text(`${wallpaper.favorites}`)
-              .fontSize(10)
-              .fontColor('#ffffff')
-          }
-        }
-      }
-      .width('100%')
-      .padding(8)
-
-      // 4. Purity 指示器 (右上角)
-      if (wallpaper.purity) {
-        Circle({ width: 8, height: 8 })
-          .fill(wallpaper.purity === 'sfw' ? '#4CAF50' : wallpaper.purity === 'sketchy' ? '#FFC107' : '#F44336')
-          .position({ x: '100%', y: 0 })
-          .markAnchor({ x: 16, y: -8 }) // 右上角偏移
-          .shadow({ radius: 4, color: 'rgba(0,0,0,0.3)' })
-      }
-    }
-    .width('100%')
-  }
-
   build() {
     Stack() {
       Column() {
-        // 1. 顶部 Header
+        // 1. 顶部 Header & 搜索栏
         Row() {
-          Text('Wallhaven')
-            .fontSize(24)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#333333')
-          Blank()
+          Search({ 
+            value: this.viewModel.searchKeyword, 
+            placeholder: 'Search wallpapers...',
+            controller: new SearchController() 
+          })
+            .height(40)
+            .layoutWeight(1)
+            .backgroundColor('#f5f5f5')
+            .placeholderColor('#999999')
+            .placeholderFont({ size: 14 })
+            .textFont({ size: 14 })
+            .onChange((value: string) => {
+              this.viewModel.searchKeyword = value;
+            })
+            .onSubmit((value: string) => {
+              this.viewModel.searchKeyword = value;
+              this.viewModel.loadWallpapers();
+            })
+            .onCopy(() => {
+              console.info('Search text copied');
+            })
+            .margin({ right: 12 })
+
           Button({ type: ButtonType.Circle }) {
             SymbolGlyph($r('sys.symbol.magnifyingglass'))
               .fontSize(20)
-              .fontColor(['#666666'])
+              .fontColor(['#ffffff'])
           }
-          .width(36)
-          .height(36)
-          .backgroundColor('#f5f5f5')
+          .width(40)
+          .height(40)
+          .backgroundColor('#2262db')
+          .onClick(() => {
+            this.viewModel.loadWallpapers();
+          })
         }
         .width('100%')
-        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+        .padding({ left: 16, right: 16, top: 32, bottom: 8 }) // 优化间距，由 48/12 调整为 32/8
 
         // 2. 筛选栏 (横向滚动 - 仅保留 Categories)
         Column() {
@@ -344,10 +312,9 @@ struct Index {
         WaterFlow({ scroller: new Scroller() }) {
           LazyForEach(this.viewModel.dataSource, (wallpaper: WallpaperItem) => {
             FlowItem() {
-              this.WallpaperCard(wallpaper)
+              WallpaperCardComponent({ wallpaper: wallpaper })
             }
             .width('100%')
-            // 移除固定高度，让内容根据 aspectRatio 自适应
             .onClick(() => {
               console.info(`[Index] 点击壁纸: ${wallpaper.id}`);
               router.pushUrl({
@@ -436,8 +403,84 @@ struct Index {
 }
 
 // ----------------------------------------
-// 外部自定义组件 (解决状态刷新问题)
+// 外部自定义组件
 // ----------------------------------------
+
+@Component
+struct WallpaperCardComponent {
+  @Prop wallpaper: WallpaperItem;
+  @State isLoaded: boolean = false;
+
+  build() {
+    Stack({ alignContent: Alignment.Bottom }) {
+      // 1. 图片层 (带渐入动画)
+      Image(this.wallpaper.thumbUrl)
+        .width('100%')
+        .aspectRatio(this.wallpaper.aspectRatio)
+        .objectFit(ImageFit.Fill)
+        .borderRadius(12)
+        .backgroundColor('#f5f5f5')
+        .alt($r('app.media.startIcon')) // 占位图
+        .opacity(this.isLoaded ? 1 : 0)
+        .animation({ duration: 400, curve: Curve.EaseIn })
+        .onComplete(() => {
+          this.isLoaded = true;
+        })
+
+      // 2. 渐变遮罩层 (提升文字可读性)
+      Column()
+        .width('100%')
+        .height(60)
+        .borderRadius({ bottomLeft: 12, bottomRight: 12 })
+        .linearGradient({
+          angle: 180, // 从上到下
+          colors: [
+            ['rgba(0,0,0,0)', 0.0],
+            ['rgba(0,0,0,0.6)', 1.0]
+          ]
+        })
+        .hitTestBehavior(HitTestMode.None)
+
+      // 3. 信息层 (浮动在底部)
+      Row() {
+        // 分辨率 Chip
+        Text(this.wallpaper.resolution || `${this.wallpaper.width}x${this.wallpaper.height}`)
+          .fontSize(10)
+          .fontColor('rgba(255,255,255,0.9)')
+          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+          .backgroundColor('rgba(0,0,0,0.4)')
+          .borderRadius(4)
+          .backdropBlur(10)
+
+        Blank()
+
+        // 收藏数
+        if (this.wallpaper.favorites && this.wallpaper.favorites > 0) {
+          Row({ space: 2 }) {
+            SymbolGlyph($r('sys.symbol.heart_fill'))
+              .fontSize(12)
+              .fontColor(['#FF5252'])
+            Text(`${this.wallpaper.favorites}`)
+              .fontSize(10)
+              .fontColor('#ffffff')
+          }
+        }
+      }
+      .width('100%')
+      .padding(8)
+
+      // 4. Purity 指示器 (右上角)
+      if (this.wallpaper.purity) {
+        Circle({ width: 8, height: 8 })
+          .fill(this.wallpaper.purity === 'sfw' ? '#4CAF50' : this.wallpaper.purity === 'sketchy' ? '#FFC107' : '#F44336')
+          .position({ x: '100%', y: 0 })
+          .markAnchor({ x: 16, y: -8 })
+          .shadow({ radius: 4, color: 'rgba(0,0,0,0.3)' })
+      }
+    }
+    .width('100%')
+  }
+}
 
 @Component
 struct FilterChip {

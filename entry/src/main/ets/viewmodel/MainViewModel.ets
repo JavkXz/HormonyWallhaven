@@ -30,6 +30,7 @@ export class MainViewModel {
   selectedTopRange: string = '1M'; // Default for Toplist
   selectedResolution: string = '';
   selectedRatio: string = '';
+  searchKeyword: string = ''; // 搜索关键字
 
   private wallhavenService: WallhavenService = AppConfig.getInstance().getWallhavenService();
 
@@ -66,9 +67,10 @@ export class MainViewModel {
     this.errorMessage = '';
 
     try {
-      console.info(`[ViewModel] 开始加载壁纸，页码: ${this.currentPage}`);
+      console.info(`[ViewModel] 开始加载壁纸，页码: ${this.currentPage}, 关键字: ${this.searchKeyword}`);
 
       const searchParams: SearchParams = {
+        q: this.searchKeyword || undefined,
         purity: this.getPurityParam(),
         sorting: this.selectedSorting,
         order: this.selectedOrder,

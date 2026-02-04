@@ -6,6 +6,7 @@ import { http } from '@kit.NetworkKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { AppConfig } from '../utils/AppConfig';
 
 @Entry
 @Component
@@ -19,6 +20,25 @@ struct WallpaperDetail {
     const params = router.getParams() as Record<string, Object>;
     if (params && params.wallpaper) {
       this.wallpaper = params.wallpaper as WallpaperItem;
+      this.loadFullDetails();
+    }
+  }
+
+  // 异步加载壁纸详情 (获取完整的标签等信息)
+  private async loadFullDetails() {
+    if (this.wallpaper && this.wallpaper.id) {
+      try {
+        const service = AppConfig.getInstance().getWallhavenService();
+        const fullDetail = await service.getWallpaperById(this.wallpaper.id);
+        if (fullDetail) {
+          // 只有当 ID 匹配时才更新，防止异步竞争
+          if (this.wallpaper.id === fullDetail.id) {
+            this.wallpaper = fullDetail;
+          }
+        }
+      } catch (err) {
+        console.error(`[WallpaperDetail] Failed to load details: ${JSON.stringify(err)}`);
+      }
     }
   }
 
@@ -83,13 +103,27 @@ struct WallpaperDetail {
 
   @Builder
   TagChip(tag: TagInfo) {
-    Text(tag.name)
-      .fontSize(12)
-      .fontColor('#e0e0e0')
-      .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-      .backgroundColor('rgba(255,255,255,0.15)')
-      .borderRadius(16)
-      .margin({ right: 6, bottom: 6 })
+    Row() {
+      Text(`# ${tag.name}`)
+        .fontSize(12)
+        .fontColor('#ffffff')
+        .fontWeight(FontWeight.Medium)
+    }
+    .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+    .backgroundColor('rgba(255,255,255,0.1)')
+    .backgroundBlurStyle(BlurStyle.Thin)
+    .borderRadius(16)
+    .margin({ right: 8, bottom: 8 })
+    .onClick(() => {
+      // 点击标签，返回首页并执行搜索
+      console.info(`[WallpaperDetail] Tag clicked: ${tag.name}, returning to search.`);
+      router.back({
+        url: 'pages/Index',
+        params: {
+          searchKeyword: tag.name
+        }
+      });
+    })
   }
 
   @Builder
@@ -207,11 +241,29 @@ struct WallpaperDetail {
                      })
                    }
                    .width('100%')
-                   .padding({ left: 16, right: 16, top: 8, bottom: 16 })
+                   .padding({ left: 16, right: 16, top: 12, bottom: 16 })
                  }
                }
 
-               // 标签云
+               // 标签云标题
+               if (this.wallpaper.tags && this.wallpaper.tags.length > 0) {
+                 ListItem() {
+                   Row() {
+                     Text('#')
+                       .fontSize(16)
+                       .fontWeight(FontWeight.Bold)
+                       .fontColor('rgba(255,255,255,0.6)')
+                       .margin({ right: 8 })
+                     Text('Keywords')
+                       .fontSize(14)
+                       .fontWeight(FontWeight.Medium)
+                       .fontColor('rgba(255,255,255,0.6)')
+                   }
+                   .padding({ left: 16, bottom: 8 })
+                 }
+               }
+
+               // 标签云内容
                if (this.wallpaper.tags && this.wallpaper.tags.length > 0) {
                  ListItem() {
                    Flex({ wrap: FlexWrap.Wrap }) {
