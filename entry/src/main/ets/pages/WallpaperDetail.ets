@@ -221,12 +221,17 @@ struct WallpaperDetail {
 
   build() {
     Stack() {
-      if (this.wallpaper) {
-        Image(this.wallpaper.imageUrl)
-          .width('100%').height('100%').objectFit(ImageFit.Contain).backgroundColor('#000000')
-          .onClick(() => { 
-            this.isPanelVisible = !this.isPanelVisible; // 切换 完整/极简 模式
-          })
+            if (this.wallpaper) {
+              // 1. 背景大图 (支持共享元素转场)
+              Image(this.wallpaper.imageUrl)
+                .width('100%')
+                .height('100%')
+                .objectFit(ImageFit.Contain)
+                .backgroundColor('#000000')
+                .geometryTransition(this.wallpaper.id) // 匹配首页的 ID
+                .onClick(() => { 
+                  this.isPanelVisible = !this.isPanelVisible; // 切换 完整/极简 模式
+                })
 
         // 顶部返回
         Row() {
@@ -342,5 +347,13 @@ struct WallpaperDetail {
       }
     }
     .width('100%').height('100%').backgroundColor('#000000')
+  }
+
+  // 页面转场配置
+  pageTransition() {
+    PageTransitionEnter({ duration: 400, curve: Curve.Linear })
+      .opacity(0)
+    PageTransitionExit({ duration: 400, curve: Curve.Linear })
+      .opacity(0)
   }
 }

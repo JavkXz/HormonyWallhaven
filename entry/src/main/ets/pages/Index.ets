@@ -143,7 +143,7 @@ struct Index {
             Text(`Sorted by: ${this.currentSorting}`)
               .fontSize(12)
               .fontColor('#999999')
-            
+
             Blank()
 
             Row() {
@@ -190,7 +190,7 @@ struct Index {
               .scrollBar(BarState.Off)
               .width('100%')
               .height(40)
-              
+
               // Purity
               Text('Purity').fontSize(12).fontColor('#999').margin({ top: 12, bottom: 8, left: 16 })
               Scroll() {
@@ -396,6 +396,14 @@ struct Index {
     .width('100%')
     .height('100%')
   }
+
+  // 页面转场配置
+  pageTransition() {
+    PageTransitionEnter({ duration: 400, curve: Curve.Linear })
+      .opacity(0)
+    PageTransitionExit({ duration: 400, curve: Curve.Linear })
+      .opacity(0)
+  }
 }
 
 // ----------------------------------------
@@ -409,7 +417,7 @@ struct WallpaperCardComponent {
 
   build() {
     Stack({ alignContent: Alignment.Bottom }) {
-      // 1. 图片层 (带渐入动画)
+      // 1. 图片层 (带渐入动画 + 共享元素转场)
       Image(this.wallpaper.thumbUrl)
         .width('100%')
         .aspectRatio(this.wallpaper.aspectRatio)
@@ -418,6 +426,7 @@ struct WallpaperCardComponent {
         .backgroundColor('#f5f5f5')
         .alt($r('app.media.startIcon')) // 占位图
         .opacity(this.isLoaded ? 1 : 0)
+        .geometryTransition(this.wallpaper.id) // 共享元素标识
         .animation({ duration: 400, curve: Curve.EaseIn })
         .onComplete(() => {
           this.isLoaded = true;
