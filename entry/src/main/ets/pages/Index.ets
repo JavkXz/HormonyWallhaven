@@ -3,6 +3,8 @@ import { router } from '@kit.ArkUI';
 import { WallpaperItem } from '../model/WallpaperModel';
 import { MainViewModel } from '../viewmodel/MainViewModel';
 import { AppConstants, SelectOption } from '../common/Constants';
+import { PreferencesUtil } from '../utils/PreferencesUtil';
+import { SearchHistoryComponent } from '../components/SearchHistoryComponent';
 
 @Entry
 @Component
@@ -19,6 +21,7 @@ struct Index {
   
   // 本地排序状态
   @State currentSorting: string = 'toplist';
+  @State showSearchHistory: boolean = false; // 是否显示搜索历史
 
   aboutToAppear() {
     console.info('[Index] 页面加载完成');
@@ -55,44 +58,91 @@ struct Index {
     Stack() {
       Column() {
         // 1. 顶部 Header & 搜索栏
-        Row() {
-          Search({ 
-            value: this.viewModel.searchKeyword, 
-            placeholder: 'Search wallpapers...',
-            controller: new SearchController() 
-          })
-            .height(40)
-            .layoutWeight(1)
-            .backgroundColor('#f5f5f5')
-            .placeholderColor('#999999')
-            .placeholderFont({ size: 14 })
-            .textFont({ size: 14 })
-            .onChange((value: string) => {
-              this.viewModel.searchKeyword = value;
+        Column() {
+          Row() {
+            Search({
+              value: this.viewModel.searchKeyword,
+              placeholder: 'Search wallpapers...',
+              controller: new SearchController()
             })
-            .onSubmit((value: string) => {
-              this.viewModel.searchKeyword = value;
+              .height(40)
+              .layoutWeight(1)
+              .backgroundColor('#f5f5f5')
+              .placeholderColor('#999999')
+              .placeholderFont({ size: 14 })
+              .textFont({ size: 14 })
+              .onChange((value: string) => {
+                this.viewModel.searchKeyword = value;
+              })
+              .onSubmit(async (value: string) => {
+                this.viewModel.searchKeyword = value;
+                this.showSearchHistory = false;
+                // 保存搜索历史
+                if (value.trim()) {
+                  await PreferencesUtil.addSearchKeyword(value.trim());
+                }
+                this.viewModel.loadWallpapers();
+              })
+              .onFocus(() => {
+                // 搜索框获得焦点时显示搜索历史
+                this.showSearchHistory = true;
+              })
+              .margin({ right: 12 })
+
+            // 收藏按钮
+            Button({ type: ButtonType.Circle }) {
+              SymbolGlyph($r('sys.symbol.heart'))
+                .fontSize(20)
+                .fontColor(['#ffffff'])
+            }
+            .width(40)
+            .height(40)
+            .backgroundColor('#FF6B6B')
+            .margin({ right: 8 })
+            .onClick(() => {
+              router.pushUrl({ url: 'pages/FavoritesPage' });
+            })
+
+            Button({ type: ButtonType.Circle }) {
+              SymbolGlyph($r('sys.symbol.magnifyingglass'))
+                .fontSize(20)
+                .fontColor(['#ffffff'])
+            }
+            .width(40)
+            .height(40)
+            .backgroundColor('#2262db')
+            .onClick(async () => {
+              // 保存搜索历史
+              if (this.viewModel.searchKeyword.trim()) {
+                await PreferencesUtil.addSearchKeyword(this.viewModel.searchKeyword.trim());
+              }
+              this.showSearchHistory = false;
               this.viewModel.loadWallpapers();
             })
-            .onCopy(() => {
-              console.info('Search text copied');
-            })
-            .margin({ right: 12 })
-
-          Button({ type: ButtonType.Circle }) {
-            SymbolGlyph($r('sys.symbol.magnifyingglass'))
-              .fontSize(20)
-              .fontColor(['#ffffff'])
           }
-          .width(40)
-          .height(40)
-          .backgroundColor('#2262db')
-          .onClick(() => {
-            this.viewModel.loadWallpapers();
-          })
+          .width('100%')
+
+          // 搜索历史组件
+          if (this.showSearchHistory) {
+            SearchHistoryComponent({
+              onHistoryItemClick: async (keyword: string) => {
+                this.viewModel.searchKeyword = keyword;
+                this.showSearchHistory = false;
+                // 重新排序搜索历史（将点击的移到顶部）
+                await PreferencesUtil.addSearchKeyword(keyword);
+                this.viewModel.loadWallpapers();
+              },
+              onClearAll: () => {
+                // 清空后保持显示状态
+              }
+            })
+            .zIndex(100)
+            .backgroundColor('#FFFFFF')
+            .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetY: 2 })
+          }
         }
         .width('100%')
-        .padding({ left: 16, right: 16, top: 32, bottom: 8 }) // 优化间距，由 48/12 调整为 32/8
+        .padding({ left: 16, right: 16, top: 32, bottom: 8 })
 
         // 2. 筛选栏 (横向滚动 - 仅保留 Categories)
         Column() {

@@ -8,6 +8,8 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { AppConfig } from '../utils/AppConfig';
 import wallpaper from '@ohos.wallpaper';
+import { FavoriteRepository } from '../utils/FavoriteRepository';
+import { HapticFeedback } from '../utils/HapticFeedback';
 
 // ----------------------------------------
 // 自定义精美选择弹窗 (浅色方案)
@@ -92,6 +94,7 @@ struct WallpaperDetail {
   @State isInfoExpanded: boolean = false;
   @State isPanelVisible: boolean = true; // 控制完整模式 vs 极简模式
   @State isDialogActive: boolean = false; // 控制面板是否完全隐藏（用于弹窗避让）
+  @State isFavorite: boolean = false; // 是否已收藏
 
   // 弹窗控制器
   dialogController: CustomDialogController = new CustomDialogController({
@@ -117,6 +120,46 @@ struct WallpaperDetail {
     if (params && params.wallpaper) {
       this.wallpaper = params.wallpaper as WallpaperItem;
       this.loadFullDetails();
+      this.checkFavoriteStatus();
+    }
+  }
+
+  /**
+   * 检查收藏状态
+   */
+  async checkFavoriteStatus() {
+    if (this.wallpaper?.id) {
+      try {
+        this.isFavorite = await FavoriteRepository.isFavorite(this.wallpaper.id);
+        console.info(`[WallpaperDetail] 收藏状态: ${this.isFavorite}`);
+      } catch (error) {
+        console.error('[WallpaperDetail] 检查收藏状态失败:', error);
+      }
+    }
+  }
+
+  /**
+   * 切换收藏状态
+   */
+  async toggleFavorite() {
+    if (!this.wallpaper) return;
+
+    try {
+      const newStatus = await FavoriteRepository.toggleFavorite(this.wallpaper);
+      this.isFavorite = newStatus;
+
+      if (newStatus) {
+        HapticFeedback.success();
+        promptAction.showToast({ message: '已添加到收藏', duration: 2000 });
+      } else {
+        HapticFeedback.light();
+        promptAction.showToast({ message: '已取消收藏', duration: 2000 });
+      }
+
+      console.info(`[WallpaperDetail] 收藏状态切换为: ${newStatus}`);
+    } catch (error) {
+      console.error('[WallpaperDetail] 切换收藏失败:', error);
+      promptAction.showToast({ message: '操作失败，请重试', duration: 2000 });
     }
   }
 
@@ -233,14 +276,30 @@ struct WallpaperDetail {
                   this.isPanelVisible = !this.isPanelVisible; // 切换 完整/极简 模式
                 })
 
-        // 顶部返回
+        // 顶部导航栏
         Row() {
+          // 返回按钮
           Button({ type: ButtonType.Circle }) {
             SymbolGlyph($r('sys.symbol.chevron_left')).fontSize(24).fontColor(['#212121'])
           }
           .width(44).height(44).backgroundColor('rgba(255,255,255,0.6)').backgroundBlurStyle(BlurStyle.Thin)
           .onClick(() => router.back())
           .margin({ left: 16, top: 48 })
+
+          Blank()
+
+          // 收藏按钮
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph(this.isFavorite ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'))
+              .fontSize(24)
+              .fontColor([this.isFavorite ? '#FF5252' : '#212121'])
+          }
+          .width(44)
+          .height(44)
+          .backgroundColor('rgba(255,255,255,0.6)')
+          .backgroundBlurStyle(BlurStyle.Thin)
+          .onClick(() => this.toggleFavorite())
+          .margin({ right: 16, top: 48 })
         }
         .width('100%').position({ x: 0, y: 0 }).zIndex(10)
 

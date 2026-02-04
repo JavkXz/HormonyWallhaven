@@ -1,30 +1,348 @@
 # HarmonyOS Wallpaper App 优化与演进路线图
 
-## 🚀 已完成阶段 (Milestone: Core, Polish & Magic)
-- [x] **搜索与联动**：实现关键词搜索及详情页标签点击回溯搜索。
-- [x] **视觉动效**：图片渐入加载（Fade-in）、现代化 LoadingProgress、超厚毛玻璃。
-- [x] **极致交互**：详情页“极简模式”与“设置弹窗”状态避让逻辑、全屏预览。
-- [x] **安全下载**：集成 `SaveButton` 安全保存图片至系统相册。
-- [x] **核心壁纸功能**：调用系统 `wallpaper` 模块，支持桌面/锁屏设置（浅色高对比度方案）。
-- [x] **共享元素转场 (Shared Element)**：使用 `geometryTransition` 实现图片无缝生长的“魔术”动效。
-- [x] **UI/UX 焕新**：全面采用浅色现代简约风，统一按钮布局与像素级对齐。
-
-## 🎯 当前优先级 (High Priority)
-### 1. 本地化持久化 (Local Persistence)
-- [ ] **搜索历史**：使用 `Preferences` 存储用户的搜索足迹，支持一键清空与再次搜索。
-- [ ] **我的收藏**：使用 `RelationalStore (RDB)` 构建本地数据库，支持离线查看已收藏的壁纸。
-
-### 2. 极致用户体验 (UX Refinement)
-- [ ] **空状态 UI (Empty States)**：设计并实现“断网”、“搜索无结果”等场景下的精美插画与引导页面。
-- [ ] **触感反馈 (Haptic)**：在设置成功、收藏操作时加入系统级线性马达反馈（Vibration）。
-
-## 🛠️ 技术深度优化 (Advanced Engineering)
-### 3. 网络与性能
-- [ ] **预加载策略**：在 WaterFlow 滑动时，预测性预取下一页数据以消除等待感。
-- [ ] **智能配色提取**：从壁纸中提取主色调，动态调整应用内的强调色（Accent Color）。
-
-## 🌈 未来愿景 (Future Vision)
-- [ ] **分布式同步**：利用 HarmonyOS 跨端能力，在平板、折叠屏与手机间同步收藏。
+**文档版本:** 3.0  
+**最后更新:** 2026-02-04  
+**维护者:** AI Assistant  
+**状态:** Phase 1 已完成，准备进入 Phase 2
 
 ---
-*Last Updated: 2026-02-04*
+
+## 📋 执行摘要
+
+**🎉 重大进展：** Phase 1 数据持久化阶段已全部完成！应用现已具备搜索历史、收藏功能、空状态UI和触感反馈等核心增强功能。
+
+**当前状态：** 应用进入**功能增强期**，已完成从"可用"到"好用"的关键跃迁。下一阶段将聚焦性能优化和高级功能。
+
+---
+
+## 🚀 已完成阶段
+
+### ✅ Milestone: Core, Polish & Magic（基础完成）
+- [x] **搜索与联动**：实现关键词搜索及详情页标签点击回溯搜索。
+- [x] **视觉动效**：图片渐入加载（Fade-in）、现代化 LoadingProgress、超厚毛玻璃。
+- [x] **极致交互**：详情页"极简模式"与"设置弹窗"状态避让逻辑、全屏预览。
+- [x] **安全下载**：集成 `SaveButton` 安全保存图片至系统相册。
+- [x] **核心壁纸功能**：调用系统 `wallpaper` 模块，支持桌面/锁屏设置。
+- [x] **共享元素转场 (Shared Element)**：使用 `geometryTransition` 实现无缝动效。
+- [x] **UI/UX 焕新**：全面采用浅色现代简约风，统一按钮布局。
+
+### ✅ Phase 1: 数据持久化 (2026-02-04 完成)
+
+#### 1.1 搜索历史 ✅ **已完成**
+- [x] **功能实现**
+  - ✅ 使用 `@ohos.data.preferences` 存储搜索关键词（最多 20 条）
+  - ✅ 支持时间倒序排列，新搜索置顶
+  - ✅ 实现"一键清空"功能
+  - ✅ 支持点击历史记录直接搜索
+
+- [x] **UI/UX 设计**
+  - ✅ 在搜索栏下方展示历史标签云（Tags）
+  - ✅ 每个标签右侧显示"×"删除按钮
+  - ✅ 顶部"清空"文字按钮
+  - ✅ 空历史时显示提示文字"暂无搜索记录"
+
+- [x] **技术实现**
+  ```typescript
+  // utils/PreferencesUtil.ets - 已创建
+  class PreferencesUtil {
+    static async addSearchKeyword(keyword: string): Promise<void>;
+    static async getSearchHistory(): Promise<string[]>;
+    static async clearSearchHistory(): Promise<void>;
+    static async removeSearchKeyword(keyword: string): Promise<void>;
+  }
+  ```
+
+#### 1.2 我的收藏 ✅ **已完成**
+- [x] **功能实现**
+  - ✅ 使用 `@ohos.data.relationalStore` (RDB) 构建本地数据库
+  - ✅ 表结构：`favorites(id, wallpaper_id, url, thumbnail, title, author, resolution, purity, create_time)`
+  - ✅ 支持离线查看已收藏的壁纸
+  - ✅ 收藏/取消收藏操作
+  - ✅ 从分辨率解析实际宽高比，避免壁纸被压缩
+
+- [x] **UI/UX 设计**
+  - ✅ 新增"我的收藏"页面（pages/FavoritesPage.ets）
+  - ✅ 使用 WaterFlow 展示收藏列表（与首页一致的体验）
+  - ✅ 长按手势支持（预留取消收藏功能）
+  - ✅ 空状态时显示精美插画和引导文字
+  - ✅ 首页搜索栏添加收藏入口按钮
+
+- [x] **技术实现**
+  ```typescript
+  // utils/FavoriteRepository.ets - 已创建
+  class FavoriteRepository {
+    static async addFavorite(wallpaper: WallpaperItem): Promise<boolean>;
+    static async removeFavorite(wallpaperId: string): Promise<boolean>;
+    static async getFavorites(): Promise<FavoriteEntity[]>;
+    static async isFavorite(wallpaperId: string): Promise<boolean>;
+    static async toggleFavorite(wallpaper: WallpaperItem): Promise<boolean>;
+    static toWallpaperItem(entity: FavoriteEntity): WallpaperItem; // 支持宽高比解析
+  }
+  ```
+
+#### 1.3 空状态 UI ✅ **已完成**
+- [x] **组件实现**
+  - ✅ 创建 `EmptyStateComponent` 可复用组件
+  - ✅ 支持多种类型：断网、无结果、空收藏、通用
+  - ✅ 可配置图标、标题、副标题、操作按钮
+  - ✅ 创建 `EmptyStateContainer` 包装组件
+
+- [x] **应用场景**
+  - ✅ 收藏页面空状态（已集成）
+  - ✅ 预留搜索无结果、断网状态接口
+
+#### 1.4 触感反馈 (Haptic) ✅ **已完成**
+- [x] **功能实现**
+  - ✅ 创建 `HapticFeedback` 工具类
+  - ✅ 收藏成功：中等强度震动
+  - ✅ 取消收藏：轻微短震
+  - ✅ 支持成功/轻微/中等/警示/错误多种反馈类型
+
+- [x] **集成点**
+  - ✅ 详情页收藏按钮点击反馈
+  - ✅ 收藏成功/取消 Toast 提示配合震动
+
+---
+
+## 🎯 当前优先级 (Phase 2)
+
+### 2. 用户体验精细化 (UX Refinement)
+
+#### 2.1 空状态全面集成 🔄 **进行中**
+- [ ] **搜索无结果**
+  - [ ] 在首页集成空状态组件
+  - [ ] 展示"未找到相关壁纸"插画
+  - [ ] 提供"清除搜索"按钮
+  - [ ] 建议展示热门搜索关键词
+
+- [ ] **断网状态**
+  - [ ] 检测网络状态（`@ohos.net.connection`）
+  - [ ] 展示断网插画（Wi-Fi 断开图标）
+  - [ ] 提供"重新加载"按钮
+  - [ ] 网络恢复时自动刷新
+
+#### 2.2 收藏功能完善 🔄 **进行中**
+- [ ] **长按取消收藏**
+  - [ ] 收藏页面长按弹出确认菜单
+  - [ ] 支持批量管理（可选）
+  
+- [ ] **收藏状态实时同步**
+  - [ ] 收藏页面取消收藏后，详情页状态同步
+  - [ ] 考虑使用 AppStore 全局状态管理
+
+#### 2.3 搜索历史优化 🔄 **待开始**
+- [ ] 搜索历史持久化到本地存储（已实现）
+- [ ] 热门搜索推荐
+- [ ] 搜索建议联想
+
+---
+
+## 🛠️ 技术深度优化 (Phase 3)
+
+### 3. 网络与性能
+
+#### 3.1 预加载策略 ⏳ **规划中**
+- [ ] **实现方案**
+  - [ ] WaterFlow 滑动时，当即将到达底部（剩余 3 个 item）时触发预加载
+  - [ ] 预加载下一页数据但不立即渲染，存储在内存缓存中
+  - [ ] 用户滑动到底部时无缝展示，消除等待感
+  - [ ] 设置预加载超时机制（5秒），避免无效等待
+
+- [ ] **代码建议**
+  ```typescript
+  // 在 Index.ets 中增强 onReachEnd 逻辑
+  onReachEnd() {
+    if (this.isLoading || this.isAllLoaded) return;
+    
+    // 触发预加载
+    this.wallhavenService.preloadNextPage().then(data => {
+      this.preloadedData = data;
+    });
+  }
+  ```
+
+#### 3.2 图片缓存优化 ⏳ **规划中**
+- [ ] **内存缓存**
+  - [ ] 实现 LRU 缓存机制
+  - [ ] 限制缓存数量（如最多 50 张）
+  - [ ] 及时释放不再使用的 PixelMap
+
+- [ ] **磁盘缓存**
+  - [ ] 缓存已下载的缩略图
+  - [ ] 设置缓存过期时间（7天）
+  - [ ] 提供手动清除缓存功能
+
+#### 3.3 智能配色提取 ⏳ **低优先级**
+- [ ] 使用 `image.PixelMap` 读取壁纸图片像素
+- [ ] 实现颜色量化算法提取主色调
+- [ ] 动态调整应用内强调色（按钮、加载进度条等）
+
+---
+
+## 🔧 架构优化建议
+
+### 4. 代码结构优化
+
+#### 4.1 状态管理 🔄 **建议实施**
+- **现状**：状态分散在组件内
+- **建议**：引入轻量级状态管理
+  ```typescript
+  // 建议创建 AppStore.ets
+  class AppStore {
+    static favorites: WallpaperItem[] = [];
+    static searchHistory: string[] = [];
+    static isOffline: boolean = false;
+    
+    static onFavoritesChanged?: () => void;
+    static onSearchHistoryChanged?: () => void;
+  }
+  ```
+
+#### 4.2 错误处理统一 🔄 **建议实施**
+- [ ] 创建统一的错误处理器
+  ```typescript
+  class ErrorHandler {
+    static handle(error: Error, context: string): void {
+      console.error(`[${context}]`, error);
+      // 根据错误类型展示不同 UI
+    }
+  }
+  ```
+
+#### 4.3 网络层增强 🔄 **建议实施**
+- [ ] 添加请求重试机制（最多 3 次）
+- [ ] 添加请求超时处理
+- [ ] 添加网络状态监听
+
+---
+
+## 📊 性能基准 (Performance Benchmarks)
+
+### 目标指标
+| 指标 | 当前 | 目标 | 测试方法 |
+|-----|------|------|---------|
+| 首屏加载时间 | ? | < 1.5s | 启动应用到首屏渲染完成 |
+| 图片加载时间 | ? | < 500ms | 从请求到显示（WiFi 环境）|
+| 滑动帧率 | ? | > 55fps | WaterFlow 滑动时 |
+| 内存占用 | ? | < 150MB | 正常使用时 |
+| 安装包大小 | ? | < 30MB | release 包 |
+| 数据库查询 | N/A | < 100ms | 收藏列表加载（100条数据）|
+
+---
+
+## 🌈 未来愿景 (Future Vision)
+
+### 5. 分布式同步 ⏳ **延后**
+- [ ] **功能描述**
+  - 利用 HarmonyOS 分布式能力
+  - 在手机、平板、折叠屏间同步收藏夹
+  - 使用 `@ohos.distributedDataObject` 实现数据同步
+
+- [ ] **延后原因**
+  - 需要多台 HarmonyOS 设备测试
+  - 当前核心功能尚未完全稳定
+  - 建议作为 2.0 大版本特性
+
+### 6. 其他潜在功能
+- [ ] **每日推荐**：基于时间的每日精选壁纸
+- [ ] **自动换壁纸**：定时自动更换桌面壁纸
+- [ ] **壁纸裁剪**：自定义裁剪区域适配不同屏幕
+- [ ] **深色模式**：系统级深色主题适配
+- [ ] **多语言支持**：英文、日文等多语言
+
+---
+
+## ✅ 实施进展总结
+
+### 已完成 (100%)
+| 功能 | 状态 | 文件 |
+|-----|------|------|
+| 搜索历史 | ✅ 完成 | `PreferencesUtil.ets`, `SearchHistoryComponent.ets` |
+| 我的收藏 | ✅ 完成 | `FavoriteRepository.ets`, `FavoritesPage.ets` |
+| 空状态组件 | ✅ 完成 | `EmptyStateComponent.ets` |
+| 触感反馈 | ✅ 完成 | `HapticFeedback.ets` |
+| 页面路由 | ✅ 完成 | `main_pages.json` 已注册 FavoritesPage |
+
+### 进行中
+| 功能 | 进度 | 下一步 |
+|-----|------|--------|
+| 空状态全面集成 | 30% | 集成到首页搜索无结果、断网状态 |
+| 收藏功能完善 | 70% | 长按取消收藏、状态同步 |
+
+### 待开始
+| 功能 | 优先级 | 预计工时 |
+|-----|--------|---------|
+| 预加载策略 | P1 | 2-3天 |
+| 图片缓存优化 | P1 | 3-4天 |
+| 状态管理重构 | P2 | 2天 |
+| 错误处理统一 | P2 | 1-2天 |
+
+---
+
+## 📝 下一阶段计划 (Phase 2: 体验精细化)
+
+### Week 1: 空状态全面集成
+- **Day 1-2**: 首页搜索无结果空状态集成
+- **Day 3-4**: 断网检测与空状态集成
+- **Day 5**: 测试与 Bug 修复
+
+### Week 2: 收藏功能完善
+- **Day 1-2**: 长按取消收藏功能
+- **Day 3**: 收藏状态同步机制
+- **Day 4-5**: 性能优化与测试
+
+### Week 3: 准备 Phase 3
+- **Day 1-2**: 预加载策略调研
+- **Day 3-4**: 图片缓存方案设计
+- **Day 5**: 代码审查与技术债务清理
+
+---
+
+## 💡 技术债务与优化建议
+
+### 高优先级
+1. **图片内存管理**：当前没有统一的图片缓存和释放机制，可能导致内存泄漏
+2. **错误处理**：部分 API 调用缺乏完善的错误处理和降级策略
+3. **状态同步**：收藏状态跨页面同步目前依赖重新加载，体验不够流畅
+
+### 中优先级
+1. **代码复用**：部分 UI 组件（如壁纸卡片）可以进一步抽象复用
+2. **性能监控**：建议接入性能监控，追踪首屏加载时间、滑动帧率等指标
+3. **单元测试**：核心工具类（PreferencesUtil, FavoriteRepository）建议补充单元测试
+
+### 低优先级
+1. **国际化**：当前仅支持中文，如需扩展市场需考虑多语言支持
+2. **无障碍**：建议增加屏幕阅读器支持、高对比度模式等无障碍功能
+
+---
+
+## 🔗 相关资源
+
+- [HarmonyOS Preferences 开发指南](https://developer.harmonyos.com/)
+- [HarmonyOS RelationalStore 开发指南](https://developer.harmonyos.com/)
+- [HarmonyOS 振动效果开发指南](https://developer.harmonyos.com/)
+- [HarmonyOS 网络连接开发指南](https://developer.harmonyos.com/)
+- [Wallhaven API 文档](https://wallhaven.cc/help/api)
+
+---
+
+## 📌 维护者备注
+
+**当前版本:** v3.0 - Phase 1 完成，Phase 2 准备中  
+**最后更新:** 2026-02-04  
+**下次 Review:** 2026-02-11 (一周后)  
+
+**关键里程碑:**
+- ✅ 2026-02-04: Phase 1 完成（搜索历史 + 收藏 + 空状态 + 触感反馈）
+- 🎯 2026-02-18: Phase 2 目标（空状态全面集成 + 收藏功能完善）
+- ⏳ 2026-03-04: Phase 3 目标（预加载 + 图片缓存）
+
+**待决策事项:**
+1. 是否需要实现批量收藏管理功能？
+2. 预加载策略是否需要在设置中提供开关？
+3. 是否优先考虑深色模式还是多语言支持？
+
+---
+
+*Last Updated: 2026-02-04 by AI Assistant*  
+*Status: Phase 1 ✅ Completed | Phase 2 🔄 Ready to Start*
