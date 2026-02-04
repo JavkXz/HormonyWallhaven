@@ -15,6 +15,10 @@
     {
       "name": "INTERNET_permission_reason",
       "value": "允许应用访问网络以获取壁纸资源"
+    },
+    {
+      "name": "SET_WALLPAPER_permission_reason",
+      "value": "允许应用将美图设置为您的桌面或锁屏壁纸"
     }
   ]
 }

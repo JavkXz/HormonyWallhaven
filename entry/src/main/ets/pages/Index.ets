@@ -326,24 +326,20 @@ struct Index {
             })
           }, (item: WallpaperItem) => item.id) // 使用 ID 作为 Key
 
-          // 加载更多提示
+          // 加载更多提示 (优化为更现代的 LoadingProgress)
           if (this.viewModel.isLoadingMore) {
             FlowItem() {
-              Row() {
-                Progress({ value: 0, total: 100 })
-                  .width(24)
-                  .height(24)
-                Text('加载中...')
-                  .fontSize(12)
-                  .fontColor('#666666')
-                  .margin({ left: 8 })
+              Column() {
+                LoadingProgress()
+                  .width(36)
+                  .height(36)
+                  .color('#2262db')
               }
               .width('100%')
-              .height(50)
+              .height(80)
               .justifyContent(FlexAlign.Center)
             }
             .width('100%')
-            .height(50)
           }
 
           if (!this.viewModel.hasMoreData && this.viewModel.dataSource.totalCount() > 0) {

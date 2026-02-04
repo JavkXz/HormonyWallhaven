@@ -17,6 +17,13 @@
         "usedScene": {
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.SET_WALLPAPER",
+        "reason": "$string:SET_WALLPAPER_permission_reason",
+        "usedScene": {
+          "when": "always"
+        }
       }
     ],
     "abilities": [
