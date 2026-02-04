@@ -13,6 +13,7 @@ struct WallpaperDetail {
   @State wallpaper: WallpaperItem | null = null;
   @State isDownloading: boolean = false;
   @State isInfoExpanded: boolean = false; // 是否展开详情
+  @State isPanelVisible: boolean = true; // 是否显示信息面板
 
   aboutToAppear() {
     const params = router.getParams() as Record<string, Object>;
@@ -109,17 +110,22 @@ struct WallpaperDetail {
           .height('100%')
           .objectFit(ImageFit.Contain)
           .backgroundColor('#000000')
+          .onClick(() => {
+            // 点击壁纸切换面板显示/隐藏状态
+            this.isPanelVisible = !this.isPanelVisible;
+          })
 
         // 2. 顶部导航栏 (透明)
         Row() {
           Button({ type: ButtonType.Circle, stateEffect: true }) {
-            Text('<')
-              .fontSize(20)
-              .fontColor('#ffffff')
+            SymbolGlyph($r('sys.symbol.chevron_left'))
+              .fontSize(24)
+              .fontColor(['#ffffff'])
           }
-          .width(40)
-          .height(40)
-          .backgroundColor('rgba(0,0,0,0.3)')
+          .width(44)
+          .height(44)
+          .backgroundColor('rgba(0,0,0,0.2)')
+          .backgroundBlurStyle(BlurStyle.Thin) // 毛玻璃效果
           .onClick(() => router.back())
           .margin({ left: 16, top: 48 }) // 避开状态栏
         }
@@ -127,10 +133,11 @@ struct WallpaperDetail {
         .alignItems(VerticalAlign.Top)
         .justifyContent(FlexAlign.Start)
         .position({ x: 0, y: 0 })
+        .zIndex(10)
 
         // 3. 底部详细信息面板
         Column() {
-          // 抓手 (Handle)
+          // 抓手 (Handle) - 仅在非极简模式下显示
           Row() {
             Column()
               .width(40)
@@ -139,13 +146,14 @@ struct WallpaperDetail {
               .borderRadius(2)
           }
           .width('100%')
+          .height(this.isPanelVisible ? 28 : 0)
+          .visibility(this.isPanelVisible ? Visibility.Visible : Visibility.None)
           .justifyContent(FlexAlign.Center)
-          .padding({ top: 12, bottom: 12 })
           .onClick(() => {
              this.isInfoExpanded = !this.isInfoExpanded;
           })
 
-          // 主要信息行
+          // 主要信息行 (始终显示)
           Row() {
             Column() {
               Text(this.wallpaper.resolution)
@@ -161,7 +169,6 @@ struct WallpaperDetail {
             .layoutWeight(1)
 
             // 安全保存按钮 (SaveButton)
-            // 注意：SaveButton 必须由用户点击触发，不能通过代码模拟点击
             if (this.isDownloading) {
               Button('Downloading...')
                 .fontSize(14)
@@ -182,51 +189,53 @@ struct WallpaperDetail {
                 })
                 .fontColor('#ffffff')
                 .backgroundColor('#2262db')
-                // SaveButton 的样式属性可能受限，需查阅文档确认是否支持所有通用属性
-                // 通常支持 width, height, backgroundColor, fontColor
             }
           }
           .width('100%')
-          .padding({ left: 16, right: 16, bottom: 16 })
+          .height(80) // 固定高度确保在极简模式下显示一致
+          .padding({ left: 16, right: 16 })
 
           // 扩展信息 (Tags & Colors) - 仅在有足够空间或展开时显示
-          List() {
-             // 颜色板
-             if (this.wallpaper.colors && this.wallpaper.colors.length > 0) {
-               ListItem() {
-                 Row() {
-                   ForEach(this.wallpaper.colors, (color: string) => {
-                     this.ColorCircle(color)
-                   })
+          if (this.isPanelVisible) {
+            List() {
+               // 颜色板
+               if (this.wallpaper.colors && this.wallpaper.colors.length > 0) {
+                 ListItem() {
+                   Row() {
+                     ForEach(this.wallpaper.colors, (color: string) => {
+                       this.ColorCircle(color)
+                     })
+                   }
+                   .width('100%')
+                   .padding({ left: 16, right: 16, top: 8, bottom: 16 })
                  }
-                 .width('100%')
-                 .padding({ left: 16, right: 16, bottom: 16 })
                }
-             }
 
-             // 标签云
-             if (this.wallpaper.tags && this.wallpaper.tags.length > 0) {
-               ListItem() {
-                 Flex({ wrap: FlexWrap.Wrap }) {
-                   ForEach(this.wallpaper.tags, (tag: TagInfo) => {
-                     this.TagChip(tag)
-                   })
+               // 标签云
+               if (this.wallpaper.tags && this.wallpaper.tags.length > 0) {
+                 ListItem() {
+                   Flex({ wrap: FlexWrap.Wrap }) {
+                     ForEach(this.wallpaper.tags, (tag: TagInfo) => {
+                       this.TagChip(tag)
+                     })
+                   }
+                   .width('100%')
+                   .padding({ left: 16, right: 16, bottom: 32 })
                  }
-                 .width('100%')
-                 .padding({ left: 16, right: 16, bottom: 32 })
                }
-             }
-             
-             // 底部留白
-             ListItem().height(20)
+               
+               // 底部留白
+               ListItem().height(20)
+            }
+            .width('100%')
+            .layoutWeight(1) 
           }
-          .width('100%')
-          .layoutWeight(1) // 占用剩余空间
         }
         .width('100%')
-        // 根据是否展开调整高度
-        .height(this.isInfoExpanded ? '60%' : '35%') 
-        .backgroundColor('rgba(30, 30, 30, 0.95)') // 深色毛玻璃背景
+        // 动态调整高度：极简模式 80vp，普通模式 35% 或 60%
+        .height(this.isPanelVisible ? (this.isInfoExpanded ? '60%' : '35%') : 80) 
+        .backgroundColor('rgba(30, 30, 30, 0.85)') // 降低不透明度配合毛玻璃
+        .backgroundBlurStyle(BlurStyle.Thin) // 面板也增加毛玻璃效果
         .borderRadius({ topLeft: 24, topRight: 24 })
         .position({ x: 0, y: '100%' })
         .markAnchor({ x: 0, y: '100%' })

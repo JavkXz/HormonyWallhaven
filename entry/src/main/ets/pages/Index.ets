@@ -80,9 +80,9 @@ struct Index {
         // 收藏数
         if (wallpaper.favorites && wallpaper.favorites > 0) {
           Row({ space: 2 }) {
-            Text('❤')
-              .fontSize(10)
-              .fontColor('#FF5252') // Material Red A200
+            SymbolGlyph($r('sys.symbol.heart_fill'))
+              .fontSize(12)
+              .fontColor(['#FF5252'])
             Text(`${wallpaper.favorites}`)
               .fontSize(10)
               .fontColor('#ffffff')
@@ -115,7 +115,9 @@ struct Index {
             .fontColor('#333333')
           Blank()
           Button({ type: ButtonType.Circle }) {
-            Text('🔍').fontSize(16)
+            SymbolGlyph($r('sys.symbol.magnifyingglass'))
+              .fontSize(20)
+              .fontColor(['#666666'])
           }
           .width(36)
           .height(36)
@@ -180,9 +182,10 @@ struct Index {
               Text(this.viewModel.isFilterExpanded ? 'Hide Filters' : 'More Filters')
                 .fontSize(12)
                 .fontColor('#2262db')
-              Text(this.viewModel.isFilterExpanded ? ' ▲' : ' ▼')
-                .fontSize(10)
-                .fontColor('#2262db')
+              SymbolGlyph(this.viewModel.isFilterExpanded ? $r('sys.symbol.chevron_up') : $r('sys.symbol.chevron_down'))
+                .fontSize(14)
+                .fontColor(['#2262db'])
+                .margin({ left: 4 })
             }
             .onClick(() => {
               this.viewModel.isFilterExpanded = !this.viewModel.isFilterExpanded;
@@ -406,8 +409,10 @@ struct Index {
 
       // 浮动刷新按钮
       Button() {
-        Text('🔄')
+        SymbolGlyph($r('sys.symbol.arrow_clockwise'))
           .fontSize(24)
+          .fontColor(['#ffffff'])
+          .symbolEffect(new PulseSymbolEffect(), this.viewModel.isLoading)
       }
       .width(56)
       .height(56)
