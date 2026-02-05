@@ -328,8 +328,9 @@ struct Index {
           }
         }
         .width('100%')
-        .backgroundColor('#ffffff')
-        .shadow({ radius: 4, color: 'rgba(0,0,0,0.05)', offsetY: 2 })
+        .backgroundColor('rgba(255, 255, 255, 0.85)')
+        .backgroundBlurStyle(BlurStyle.Thin)
+        .shadow({ radius: 20, color: 'rgba(0, 0, 0, 0.06)', offsetY: 4 })
         .zIndex(1) // 确保在 WaterFlow 上方
 
         // 错误信息显示
@@ -406,11 +407,11 @@ struct Index {
           }
         }
         .columnsTemplate('1fr 1fr')
-        .columnsGap(8)
-        .rowsGap(8)
+        .columnsGap(12)
+        .rowsGap(12)
         .width('100%')
         .layoutWeight(1)
-        .padding(8)
+        .padding(12)
         .onReachEnd(() => {
           console.info('[Index] 滑动到底部，触发加载更多');
           this.viewModel.loadMore();
@@ -472,8 +473,8 @@ struct WallpaperCardComponent {
         .width('100%')
         .aspectRatio(this.wallpaper.aspectRatio)
         .objectFit(ImageFit.Fill)
-        .borderRadius(12)
-        .backgroundColor('#f5f5f5')
+        .borderRadius(16)
+        .backgroundColor('#f2f3f5')
         .alt($r('app.media.startIcon')) // 占位图
         .opacity(this.isLoaded ? 1 : 0)
         .geometryTransition(this.wallpaper.id) // 共享元素标识
@@ -485,13 +486,13 @@ struct WallpaperCardComponent {
       // 2. 渐变遮罩层 (提升文字可读性)
       Column()
         .width('100%')
-        .height(60)
-        .borderRadius({ bottomLeft: 12, bottomRight: 12 })
+        .height(56)
+        .borderRadius({ bottomLeft: 16, bottomRight: 16 })
         .linearGradient({
           angle: 180, // 从上到下
           colors: [
             ['rgba(0,0,0,0)', 0.0],
-            ['rgba(0,0,0,0.6)', 1.0]
+            ['rgba(0,0,0,0.45)', 1.0]
           ]
         })
         .hitTestBehavior(HitTestMode.None)

@@ -305,9 +305,9 @@ struct WallpaperDetail {
 
         // 详情面板
         Column() {
-          // Handle - 仅在完整模式下显示
+          // Handle - 拖动手柄，仅在完整模式下显示
           Row() {
-            Column().width(40).height(4).backgroundColor('rgba(0,0,0,0.1)').borderRadius(2)
+            Column().width(44).height(5).backgroundColor('rgba(0, 0, 0, 0.15)').borderRadius(2.5)
           }
           .width('100%')
           .height(this.isPanelVisible ? 28 : 0)
@@ -398,9 +398,10 @@ struct WallpaperDetail {
         .width('100%')
         // 核心高度逻辑：弹窗时 0，否则根据 isPanelVisible 决定是 35%/60% 还是 80vp
         .height(this.isDialogActive ? 0 : (this.isPanelVisible ? (this.isInfoExpanded ? '60%' : '35%') : 80))
-        .backgroundColor('rgba(255, 255, 255, 0.9)')
+        .backgroundColor('rgba(255, 255, 255, 0.92)')
         .backgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THICK)
-        .borderRadius({ topLeft: 24, topRight: 24 })
+        .borderRadius({ topLeft: 28, topRight: 28 })
+        .shadow({ radius: 24, color: 'rgba(0, 0, 0, 0.1)', offsetY: -4 })
         .position({ x: 0, y: '100%' }).markAnchor({ x: 0, y: '100%' })
         .animation({ duration: 300, curve: Curve.FastOutSlowIn })
       }
