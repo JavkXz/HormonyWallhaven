@@ -4,6 +4,8 @@ import { WallpaperItem } from '../model/WallpaperModel';
 import { MainViewModel } from '../viewmodel/MainViewModel';
 import { AppConstants, SelectOption } from '../common/Constants';
 import { PreferencesUtil } from '../utils/PreferencesUtil';
+import { FavoriteRepository } from '../utils/FavoriteRepository';
+import { globalState } from '../common/GlobalState';
 import { SearchHistoryComponent } from '../components/SearchHistoryComponent';
 
 @Entry
@@ -23,20 +25,24 @@ struct Index {
   @State currentSorting: string = 'toplist';
   @State showSearchHistory: boolean = false; // 是否显示搜索历史
 
-  aboutToAppear() {
+  async aboutToAppear() {
     console.info('[Index] 页面加载完成');
     this.syncViewModelFilters();
     this.currentSorting = this.viewModel.selectedSorting;
+    
+    // 初始化全局收藏状态
+    const favoriteIds = await FavoriteRepository.getAllFavoriteIds();
+    globalState.initFavorites(favoriteIds);
+    
     this.viewModel.loadWallpapers();
   }
 
   onPageShow() {
-    // 检查是否有返回参数 (例如从详情页点击标签返回)
+    // 检查是否有返回参数
     const params = router.getParams() as Record<string, Object>;
     if (params && params.searchKeyword) {
       const newKeyword = params.searchKeyword as string;
       if (newKeyword !== this.viewModel.searchKeyword) {
-        console.info(`[Index] 收到返回搜索请求: ${newKeyword}`);
         this.viewModel.searchKeyword = newKeyword;
         this.viewModel.loadWallpapers();
       }
@@ -69,518 +75,236 @@ struct Index {
               .layoutWeight(1)
               .backgroundColor('#f5f5f5')
               .placeholderColor('#999999')
-              .placeholderFont({ size: 14 })
-              .textFont({ size: 14 })
-              .onChange((value: string) => {
-                this.viewModel.searchKeyword = value;
-              })
+              .onChange((value: string) => { this.viewModel.searchKeyword = value; })
               .onSubmit(async (value: string) => {
                 this.viewModel.searchKeyword = value;
                 this.showSearchHistory = false;
-                // 保存搜索历史
-                if (value.trim()) {
-                  await PreferencesUtil.addSearchKeyword(value.trim());
-                }
+                if (value.trim()) await PreferencesUtil.addSearchKeyword(value.trim());
                 this.viewModel.loadWallpapers();
               })
-              .onFocus(() => {
-                // 搜索框获得焦点时显示搜索历史
-                this.showSearchHistory = true;
-              })
+              .onFocus(() => { this.showSearchHistory = true; })
               .margin({ right: 12 })
 
             // 收藏按钮
             Button({ type: ButtonType.Circle }) {
-              SymbolGlyph($r('sys.symbol.heart'))
-                .fontSize(20)
-                .fontColor(['#ffffff'])
+              SymbolGlyph($r('sys.symbol.heart')).fontSize(20).fontColor(['#ffffff'])
             }
-            .width(40)
-            .height(40)
-            .backgroundColor('#FF6B6B')
-            .margin({ right: 8 })
-            .onClick(() => {
-              router.pushUrl({ url: 'pages/FavoritesPage' });
-            })
+            .width(40).height(40).backgroundColor('#FF6B6B').margin({ right: 8 })
+            .onClick(() => { router.pushUrl({ url: 'pages/FavoritesPage' }); })
 
             Button({ type: ButtonType.Circle }) {
-              SymbolGlyph($r('sys.symbol.magnifyingglass'))
-                .fontSize(20)
-                .fontColor(['#ffffff'])
+              SymbolGlyph($r('sys.symbol.magnifyingglass')).fontSize(20).fontColor(['#ffffff'])
             }
-            .width(40)
-            .height(40)
-            .backgroundColor('#2262db')
+            .width(40).height(40).backgroundColor('#2262db')
             .onClick(async () => {
-              // 保存搜索历史
-              if (this.viewModel.searchKeyword.trim()) {
-                await PreferencesUtil.addSearchKeyword(this.viewModel.searchKeyword.trim());
-              }
+              if (this.viewModel.searchKeyword.trim()) await PreferencesUtil.addSearchKeyword(this.viewModel.searchKeyword.trim());
               this.showSearchHistory = false;
               this.viewModel.loadWallpapers();
             })
           }
           .width('100%')
 
-          // 搜索历史组件
           if (this.showSearchHistory) {
             SearchHistoryComponent({
               onHistoryItemClick: async (keyword: string) => {
                 this.viewModel.searchKeyword = keyword;
                 this.showSearchHistory = false;
-                // 重新排序搜索历史（将点击的移到顶部）
                 await PreferencesUtil.addSearchKeyword(keyword);
                 this.viewModel.loadWallpapers();
-              },
-              onClearAll: () => {
-                // 清空后保持显示状态
               }
             })
-            .zIndex(100)
-            .backgroundColor('#FFFFFF')
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetY: 2 })
+            .zIndex(100).backgroundColor('#FFFFFF').shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetY: 2 })
           }
         }
-        .width('100%')
-        .padding({ left: 16, right: 16, top: 32, bottom: 8 })
+        .width('100%').padding({ left: 16, right: 16, top: 32, bottom: 8 })
 
-        // 2. 筛选栏 (横向滚动 - 仅保留 Categories)
+        // 2. 筛选栏
         Column() {
           Scroll() {
             Row() {
-              // Categories Group
-              Row() {
-                FilterChip({
-                  label: 'General',
-                  isSelected: this.isCategoryGeneral,
-                  onClickAction: () => {
-                    this.isCategoryGeneral = !this.isCategoryGeneral;
-                    this.syncViewModelFilters();
-                    this.viewModel.loadWallpapers();
-                  }
-                })
-                FilterChip({
-                  label: 'Anime',
-                  isSelected: this.isCategoryAnime,
-                  onClickAction: () => {
-                    this.isCategoryAnime = !this.isCategoryAnime;
-                    this.syncViewModelFilters();
-                    this.viewModel.loadWallpapers();
-                  }
-                })
-                FilterChip({
-                  label: 'People',
-                  isSelected: this.isCategoryPeople,
-                  onClickAction: () => {
-                    this.isCategoryPeople = !this.isCategoryPeople;
-                    this.syncViewModelFilters();
-                    this.viewModel.loadWallpapers();
-                  }
-                })
-              }
+              FilterChip({ label: 'General', isSelected: this.isCategoryGeneral, onClickAction: () => { this.isCategoryGeneral = !this.isCategoryGeneral; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+              FilterChip({ label: 'Anime', isSelected: this.isCategoryAnime, onClickAction: () => { this.isCategoryAnime = !this.isCategoryAnime; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+              FilterChip({ label: 'People', isSelected: this.isCategoryPeople, onClickAction: () => { this.isCategoryPeople = !this.isCategoryPeople; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
             }
             .padding({ left: 16, right: 16 })
           }
-          .scrollable(ScrollDirection.Horizontal)
-          .scrollBar(BarState.Off)
-          .width('100%')
-          .height(40)
-          .align(Alignment.Start)
+          .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%').height(40).align(Alignment.Start)
 
-          // 3. 高级筛选展开按钮 & 状态显示
+          // 3. 高级筛选展开按钮
           Row() {
-            // 当前排序状态简略显示
-            Text(`Sorted by: ${this.currentSorting}`)
-              .fontSize(12)
-              .fontColor('#999999')
-
+            Text(`Sorted by: ${this.currentSorting}`).fontSize(12).fontColor('#999999')
             Blank()
-
             Row() {
-              Text(this.viewModel.isFilterExpanded ? 'Hide Filters' : 'More Filters')
-                .fontSize(12)
-                .fontColor('#2262db')
-              SymbolGlyph(this.viewModel.isFilterExpanded ? $r('sys.symbol.chevron_up') : $r('sys.symbol.chevron_down'))
-                .fontSize(14)
-                .fontColor(['#2262db'])
-                .margin({ left: 4 })
+              Text(this.viewModel.isFilterExpanded ? 'Hide Filters' : 'More Filters').fontSize(12).fontColor('#2262db')
+              SymbolGlyph(this.viewModel.isFilterExpanded ? $r('sys.symbol.chevron_up') : $r('sys.symbol.chevron_down')).fontSize(14).fontColor(['#2262db']).margin({ left: 4 })
             }
-            .onClick(() => {
-              this.viewModel.isFilterExpanded = !this.viewModel.isFilterExpanded;
-            })
+            .onClick(() => { this.viewModel.isFilterExpanded = !this.viewModel.isFilterExpanded; })
           }
-          .width('100%')
-          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .width('100%').padding({ left: 16, right: 16, top: 8, bottom: 8 })
 
-          // 4. 展开的筛选面板 (包含 Sorting, Purity, TopRange, Resolution)
           if (this.viewModel.isFilterExpanded) {
             Column() {
               Divider().color('#f0f0f0')
-
-              // Sorting (移回这里)
-              Text('Sorting').fontSize(12).fontColor('#999').margin({ top: 12, bottom: 8, left: 16 })
-              Scroll() {
-                Row() {
-                  ForEach(AppConstants.SORTING_OPTIONS, (option: SelectOption) => {
-                    SelectChip({
-                      label: option.label,
-                      value: option.value,
-                      currentValue: this.currentSorting,
-                      onSelectAction: () => {
-                        this.currentSorting = option.value;
-                        this.syncViewModelFilters();
-                        this.viewModel.loadWallpapers();
-                      }
-                    })
-                  })
-                }
-                .padding({ left: 16, right: 16 })
-              }
-              .scrollable(ScrollDirection.Horizontal)
-              .scrollBar(BarState.Off)
-              .width('100%')
-              .height(40)
-
-              // Purity
-              Text('Purity').fontSize(12).fontColor('#999').margin({ top: 12, bottom: 8, left: 16 })
-              Scroll() {
-                Row() {
-                  FilterChip({
-                    label: 'SFW',
-                    isSelected: this.isPuritySFW,
-                    onClickAction: () => {
-                      this.isPuritySFW = !this.isPuritySFW;
-                      this.syncViewModelFilters();
-                      this.viewModel.loadWallpapers();
-                    }
-                  })
-                  FilterChip({
-                    label: 'Sketchy',
-                    isSelected: this.isPuritySketchy,
-                    onClickAction: () => {
-                      this.isPuritySketchy = !this.isPuritySketchy;
-                      this.syncViewModelFilters();
-                      this.viewModel.loadWallpapers();
-                    }
-                  })
-                }
-                .padding({ left: 16, right: 16 })
-              }
-              .scrollable(ScrollDirection.Horizontal)
-              .scrollBar(BarState.Off)
-              .width('100%')
-              .height(40)
-
-              // TopRange (仅当 Sorting == toplist 时显示)
-              if (this.currentSorting === 'toplist') {
-                Text('Time Range').fontSize(12).fontColor('#999').margin({ top: 12, bottom: 8, left: 16 })
-                Scroll() {
-                  Row() {
-                    ForEach(AppConstants.TOPRANGE_OPTIONS, (option: SelectOption) => {
-                      SelectChip({
-                        label: option.label,
-                        value: option.value,
-                        currentValue: this.viewModel.selectedTopRange,
-                        onSelectAction: () => {
-                          this.viewModel.selectedTopRange = option.value;
-                          this.viewModel.loadWallpapers();
-                        }
-                      })
-                    })
-                  }
-                  .padding({ left: 16, right: 16 })
-                }
-                .scrollable(ScrollDirection.Horizontal)
-                .scrollBar(BarState.Off)
-                .width('100%')
-                .height(40)
-              }
-
-              // Resolution
-              Text('Resolution').fontSize(12).fontColor('#999').margin({ top: 12, bottom: 8, left: 16 })
-               Scroll() {
-                Row() {
-                    ForEach(AppConstants.RESOLUTION_OPTIONS, (option: SelectOption) => {
-                      SelectChip({
-                        label: option.label,
-                        value: option.value,
-                        currentValue: this.viewModel.selectedResolution,
-                        onSelectAction: () => {
-                          this.viewModel.selectedResolution = option.value;
-                          this.viewModel.loadWallpapers();
-                        }
-                      })
-                    })
-                  }
-                  .padding({ left: 16, right: 16 })
-              }
-              .scrollable(ScrollDirection.Horizontal)
-              .scrollBar(BarState.Off)
-              .width('100%')
-              .height(40)
-
-              // 底部留白
+              this.AdvancedFilterSection()
               Blank().height(16)
             }
-            .width('100%')
-            .backgroundColor('#fafafa')
-            .animation({ duration: 300 })
+            .width('100%').backgroundColor('#fafafa').animation({ duration: 300 })
           }
         }
-        .width('100%')
-        .backgroundColor('rgba(255, 255, 255, 0.85)')
-        .backgroundBlurStyle(BlurStyle.Thin)
-        .shadow({ radius: 20, color: 'rgba(0, 0, 0, 0.06)', offsetY: 4 })
-        .zIndex(1) // 确保在 WaterFlow 上方
+        .width('100%').backgroundColor('rgba(255, 255, 255, 0.85)').backgroundBlurStyle(BlurStyle.Thin).shadow({ radius: 20, color: 'rgba(0, 0, 0, 0.06)', offsetY: 4 }).zIndex(2)
 
-        // 错误信息显示
-        if (this.viewModel.errorMessage) {
-          Text(this.viewModel.errorMessage)
-            .fontSize(14)
-            .fontColor('#ff0000')
-            .margin({ top: 10, bottom: 10 })
-            .textAlign(TextAlign.Center)
-        }
-
-        // 加载状态 (初次加载)
-        if (this.viewModel.isLoading) {
-          Column() {
-            Progress({ value: 0, total: 100, type: ProgressType.ScaleRing })
-              .width(50)
-              .height(50)
-              .color('#2262db')
-            Text('Loading awesome wallpapers...')
-              .fontSize(12)
-              .fontColor('#999')
-              .margin({ top: 16 })
-          }
-          .width('100%')
-          .height('50%')
-          .justifyContent(FlexAlign.Center)
-        }
-
-        // 壁纸列表
-        WaterFlow({ scroller: new Scroller() }) {
-          LazyForEach(this.viewModel.dataSource, (wallpaper: WallpaperItem) => {
-            FlowItem() {
-              WallpaperCardComponent({ wallpaper: wallpaper })
-            }
-            .width('100%')
-            .onClick(() => {
-              console.info(`[Index] 点击壁纸: ${wallpaper.id}`);
-              router.pushUrl({
-                url: 'pages/WallpaperDetail',
-                params: {
-                  wallpaper: wallpaper
-                }
-              });
-            })
-          }, (item: WallpaperItem) => item.id) // 使用 ID 作为 Key
-
-          // 加载更多提示 (优化为更现代的 LoadingProgress)
-          if (this.viewModel.isLoadingMore) {
-            FlowItem() {
-              Column() {
-                LoadingProgress()
-                  .width(36)
-                  .height(36)
-                  .color('#2262db')
-              }
-              .width('100%')
-              .height(80)
-              .justifyContent(FlexAlign.Center)
-            }
-            .width('100%')
-          }
-
-          if (!this.viewModel.hasMoreData && this.viewModel.dataSource.totalCount() > 0) {
-            FlowItem() {
-              Text('没有更多了')
-                .fontSize(12)
-                .fontColor('#999999')
+        // 列表容器
+        Stack({ alignContent: Alignment.Top }) {
+          // 下拉刷新组件
+          Refresh({ refreshing: $$this.viewModel.isLoading }) {
+            WaterFlow({ scroller: new Scroller() }) {
+              LazyForEach(this.viewModel.dataSource, (wallpaper: WallpaperItem) => {
+                FlowItem() { WallpaperCardComponent({ wallpaper: wallpaper }) }
                 .width('100%')
-                .height(50)
-                .textAlign(TextAlign.Center)
+                .onClick(() => { router.pushUrl({ url: 'pages/WallpaperDetail', params: { wallpaper: wallpaper } }); })
+              }, (item: WallpaperItem) => item.id)
+
+              if (this.viewModel.isLoadingMore) {
+                FlowItem() { Column() { LoadingProgress().width(36).height(36).color('#2262db') }.width('100%').height(80).justifyContent(FlexAlign.Center) }.width('100%')
+              }
+              if (!this.viewModel.hasMoreData && this.viewModel.dataSource.totalCount() > 0) {
+                FlowItem() { Text('No more wallpapers').fontSize(12).fontColor('#999').width('100%').height(50).textAlign(TextAlign.Center) }.width('100%').height(50)
+              }
             }
-            .width('100%')
-            .height(50)
+            .columnsTemplate('1fr 1fr').columnsGap(12).rowsGap(12).width('100%').height('100%').padding(12)
+            .onReachEnd(() => { this.viewModel.loadMore(); })
+          }
+          .onRefreshing(() => { this.viewModel.loadWallpapers(false); })
+          .backgroundColor('#F5F5F5')
+
+          // 居中大动画 (仅在列表为空时显示)
+          if (this.viewModel.isLoading && this.viewModel.dataSource.totalCount() === 0) {
+            Column() {
+              LoadingProgress().width(56).height(56).color('#2262db')
+              Text('Discovering beauty...').fontSize(14).fontColor('#666').margin({ top: 16 })
+            }
+            .width('100%').height('100%').backgroundColor('#FFFFFF').justifyContent(FlexAlign.Center).zIndex(1)
+          }
+
+          // 🚀 重新设计的刷新胶囊提示 (Pill Loading)
+          if (this.viewModel.isLoading && this.viewModel.dataSource.totalCount() > 0) {
+            Row({ space: 10 }) {
+              LoadingProgress().width(18).height(18).color('#2262db')
+              Text('Refreshing Wallpapers...')
+                .fontSize(13)
+                .fontWeight(FontWeight.Medium)
+                .fontColor('#2262db')
+            }
+            .padding({ left: 16, right: 16, top: 10, bottom: 10 })
+            .margin({ top: 12 })
+            .backgroundColor('rgba(255, 255, 255, 0.9)')
+            .backgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THICK)
+            .borderRadius(20)
+            .shadow({ radius: 15, color: 'rgba(0,0,0,0.1)', offsetY: 5 })
+            .transition(TransitionEffect.asymmetric(
+              TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: -50 })),
+              TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: -50 }))
+            ))
+            .zIndex(10)
+          }
+
+          if (this.viewModel.errorMessage && this.viewModel.dataSource.totalCount() === 0) {
+            Column() {
+              SymbolGlyph($r('sys.symbol.wifi_slash')).fontSize(48).fontColor(['#999999'])
+              Text(this.viewModel.errorMessage).fontSize(14).fontColor('#999').margin({ top: 16 })
+              Button('Retry').margin({ top: 24 }).onClick(() => this.viewModel.loadWallpapers())
+            }
+            .width('100%').height('100%').backgroundColor('#FFFFFF').justifyContent(FlexAlign.Center)
           }
         }
-        .columnsTemplate('1fr 1fr')
-        .columnsGap(12)
-        .rowsGap(12)
-        .width('100%')
-        .layoutWeight(1)
-        .padding(12)
-        .onReachEnd(() => {
-          console.info('[Index] 滑动到底部，触发加载更多');
-          this.viewModel.loadMore();
-        })
+        .width('100%').layoutWeight(1)
       }
-      .width('100%')
-      .height('100%')
-      .alignItems(HorizontalAlign.Center)
+      .width('100%').height('100%')
 
       // 浮动刷新按钮
       Button() {
         SymbolGlyph($r('sys.symbol.arrow_clockwise'))
-          .fontSize(24)
-          .fontColor(['#ffffff'])
+          .fontSize(24).fontColor(['#ffffff'])
           .symbolEffect(new PulseSymbolEffect(), this.viewModel.isLoading)
       }
-      .width(56)
-      .height(56)
-      .backgroundColor('#2262db')
-      .borderRadius(28)
-      .shadow({
-        radius: 8,
-        color: 'rgba(34, 98, 219, 0.4)',
-        offsetX: 0,
-        offsetY: 4
-      })
-      .position({ x: '100%', y: '100%' })
-      .markAnchor({ x: 76, y: 76 })
-      .onClick(() => {
-        this.viewModel.loadWallpapers(false);
-      })
+      .width(56).height(56).backgroundColor('#2262db').borderRadius(28)
+      .shadow({ radius: 8, color: 'rgba(34, 98, 219, 0.4)', offsetY: 4 })
+      .position({ x: '100%', y: '100%' }).markAnchor({ x: 76, y: 76 })
+      .onClick(() => { this.viewModel.loadWallpapers(false); })
     }
-    .width('100%')
-    .height('100%')
+    .width('100%').height('100%')
   }
 
-  // 页面转场配置
+  @Builder
+  AdvancedFilterSection() {
+    Column() {
+      // Sorting
+      this.FilterTitle('Sorting')
+      Scroll() { Row() { ForEach(AppConstants.SORTING_OPTIONS, (o: SelectOption) => { SelectChip({ label: o.label, value: o.value, currentValue: this.currentSorting, onSelectAction: () => { this.currentSorting = o.value; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } }) }) }.padding({ left: 16, right: 16 }) }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).height(40)
+
+      // Purity
+      this.FilterTitle('Purity')
+      Scroll() { Row() { 
+        FilterChip({ label: 'SFW', isSelected: this.isPuritySFW, onClickAction: () => { this.isPuritySFW = !this.isPuritySFW; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+        FilterChip({ label: 'Sketchy', isSelected: this.isPuritySketchy, onClickAction: () => { this.isPuritySketchy = !this.isPuritySketchy; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+      }.padding({ left: 16, right: 16 }) }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).height(40)
+
+      // Time Range
+      if (this.currentSorting === 'toplist') {
+        this.FilterTitle('Time Range')
+        Scroll() { Row() { ForEach(AppConstants.TOPRANGE_OPTIONS, (o: SelectOption) => { SelectChip({ label: o.label, value: o.value, currentValue: this.viewModel.selectedTopRange, onSelectAction: () => { this.viewModel.selectedTopRange = o.value; this.viewModel.loadWallpapers(); } }) }) }.padding({ left: 16, right: 16 }) }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).height(40)
+      }
+
+      // Resolution
+      this.FilterTitle('Resolution')
+      Scroll() { Row() { ForEach(AppConstants.RESOLUTION_OPTIONS, (o: SelectOption) => { SelectChip({ label: o.label, value: o.value, currentValue: this.viewModel.selectedResolution, onSelectAction: () => { this.viewModel.selectedResolution = o.value; this.viewModel.loadWallpapers(); } }) }) }.padding({ left: 16, right: 16 }) }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).height(40)
+    }
+  }
+
+  @Builder FilterTitle(title: string) {
+    Text(title).fontSize(12).fontColor('#999').margin({ top: 12, bottom: 8, left: 16 })
+  }
+
   pageTransition() {
-    PageTransitionEnter({ duration: 400, curve: Curve.Linear })
-      .opacity(0)
-    PageTransitionExit({ duration: 400, curve: Curve.Linear })
-      .opacity(0)
+    PageTransitionEnter({ duration: 400, curve: Curve.Linear }).opacity(0)
+    PageTransitionExit({ duration: 400, curve: Curve.Linear }).opacity(0)
   }
 }
 
-// ----------------------------------------
-// 外部自定义组件
-// ----------------------------------------
-
+// --- 子组件保持原有逻辑但稍微优化视觉 ---
 @Component
 struct WallpaperCardComponent {
   @Prop wallpaper: WallpaperItem;
   @State isLoaded: boolean = false;
-
   build() {
     Stack({ alignContent: Alignment.Bottom }) {
-      // 1. 图片层 (带渐入动画 + 共享元素转场)
-      Image(this.wallpaper.thumbUrl)
-        .width('100%')
-        .aspectRatio(this.wallpaper.aspectRatio)
-        .objectFit(ImageFit.Fill)
-        .borderRadius(16)
-        .backgroundColor('#f2f3f5')
-        .alt($r('app.media.startIcon')) // 占位图
-        .opacity(this.isLoaded ? 1 : 0)
-        .geometryTransition(this.wallpaper.id) // 共享元素标识
-        .animation({ duration: 400, curve: Curve.EaseIn })
-        .onComplete(() => {
-          this.isLoaded = true;
-        })
-
-      // 2. 渐变遮罩层 (提升文字可读性)
-      Column()
-        .width('100%')
-        .height(56)
-        .borderRadius({ bottomLeft: 16, bottomRight: 16 })
-        .linearGradient({
-          angle: 180, // 从上到下
-          colors: [
-            ['rgba(0,0,0,0)', 0.0],
-            ['rgba(0,0,0,0.45)', 1.0]
-          ]
-        })
-        .hitTestBehavior(HitTestMode.None)
-
-      // 3. 信息层 (浮动在底部)
+      Image(this.wallpaper.thumbUrl).width('100%').aspectRatio(this.wallpaper.aspectRatio).objectFit(ImageFit.Fill).borderRadius(16).backgroundColor('#f2f3f5').opacity(this.isLoaded ? 1 : 0).geometryTransition(this.wallpaper.id).animation({ duration: 400, curve: Curve.EaseIn }).onComplete(() => { this.isLoaded = true; })
+      Column().width('100%').height(56).borderRadius({ bottomLeft: 16, bottomRight: 16 }).linearGradient({ angle: 180, colors: [['rgba(0,0,0,0)', 0.0], ['rgba(0,0,0,0.45)', 1.0]] }).hitTestBehavior(HitTestMode.None)
       Row() {
-        // 分辨率 Chip
-        Text(this.wallpaper.resolution || `${this.wallpaper.width}x${this.wallpaper.height}`)
-          .fontSize(10)
-          .fontColor('rgba(255,255,255,0.9)')
-          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-          .backgroundColor('rgba(0,0,0,0.4)')
-          .borderRadius(4)
-          .backdropBlur(10)
-
+        Text(this.wallpaper.resolution || `${this.wallpaper.width}x${this.wallpaper.height}`).fontSize(10).fontColor('rgba(255,255,255,0.9)').padding({ left: 6, right: 6, top: 2, bottom: 2 }).backgroundColor('rgba(0,0,0,0.4)').borderRadius(4).backdropBlur(10)
         Blank()
-
-        // 收藏数
-        if (this.wallpaper.favorites && this.wallpaper.favorites > 0) {
-          Row({ space: 2 }) {
-            SymbolGlyph($r('sys.symbol.heart_fill'))
-              .fontSize(12)
-              .fontColor(['#FF5252'])
-            Text(`${this.wallpaper.favorites}`)
-              .fontSize(10)
-              .fontColor('#ffffff')
-          }
+        Row({ space: 4 }) {
+          SymbolGlyph(globalState.isFavorite(this.wallpaper.id) ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart')).fontSize(14).fontColor([globalState.isFavorite(this.wallpaper.id) ? '#FF5252' : '#ffffff'])
+          if (this.wallpaper.favorites && this.wallpaper.favorites > 0) { Text(`${this.wallpaper.favorites}`).fontSize(10).fontColor('#ffffff') }
         }
-      }
-      .width('100%')
-      .padding(8)
-
-      // 4. Purity 指示器 (右上角)
-      if (this.wallpaper.purity) {
-        Circle({ width: 8, height: 8 })
-          .fill(this.wallpaper.purity === 'sfw' ? '#4CAF50' : this.wallpaper.purity === 'sketchy' ? '#FFC107' : '#F44336')
-          .position({ x: '100%', y: 0 })
-          .markAnchor({ x: 16, y: -8 })
-          .shadow({ radius: 4, color: 'rgba(0,0,0,0.3)' })
-      }
-    }
-    .width('100%')
+        .padding({ left: 8, right: 8, top: 4, bottom: 4 }).backgroundColor('rgba(0,0,0,0.2)').borderRadius(12)
+      }.width('100%').padding(8)
+    }.width('100%')
   }
 }
 
 @Component
 struct FilterChip {
-  @Prop label: string;
-  @Prop isSelected: boolean;
-  onClickAction: () => void = () => {};
-
+  @Prop label: string; @Prop isSelected: boolean; onClickAction: () => void = () => {};
   build() {
-    Text(this.label)
-      .fontSize(12)
-      .fontColor(this.isSelected ? '#ffffff' : '#666666')
-      .padding({ left: 16, right: 16, top: 6, bottom: 6 })
-      .backgroundColor(this.isSelected ? '#2262db' : '#f0f0f0')
-      .borderRadius(16)
-      .margin({ right: 8 })
-      .onClick(() => {
-        if (this.onClickAction) {
-          this.onClickAction();
-        }
-      })
-      .animation({ duration: 200 })
+    Text(this.label).fontSize(12).fontColor(this.isSelected ? '#ffffff' : '#666666').padding({ left: 16, right: 16, top: 6, bottom: 6 }).backgroundColor(this.isSelected ? '#2262db' : '#f0f0f0').borderRadius(16).margin({ right: 8 }).onClick(() => { if (this.onClickAction) this.onClickAction(); }).animation({ duration: 200 })
   }
 }
 
 @Component
 struct SelectChip {
-  @Prop label: string;
-  @Prop value: string;
-  @Prop currentValue: string;
-  onSelectAction: () => void = () => {};
-
+  @Prop label: string; @Prop value: string; @Prop currentValue: string; onSelectAction: () => void = () => {};
   build() {
-    Text(this.label)
-      .fontSize(12)
-      .fontColor(this.currentValue === this.value ? '#ffffff' : '#666666')
-      .padding({ left: 16, right: 16, top: 6, bottom: 6 })
-      .backgroundColor(this.currentValue === this.value ? '#2262db' : '#f0f0f0') // 统一使用主题蓝
-      .borderRadius(16)
-      .margin({ right: 8 })
-      .onClick(() => {
-        if (this.onSelectAction) {
-          this.onSelectAction();
-        }
-      })
-      .animation({ duration: 200 })
+    Text(this.label).fontSize(12).fontColor(this.currentValue === this.value ? '#ffffff' : '#666666').padding({ left: 16, right: 16, top: 6, bottom: 6 }).backgroundColor(this.currentValue === this.value ? '#2262db' : '#f0f0f0').borderRadius(16).margin({ right: 8 }).onClick(() => { if (this.onSelectAction) this.onSelectAction(); }).animation({ duration: 200 })
   }
 }

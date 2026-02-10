@@ -1,7 +1,8 @@
-import { router } from '@kit.ArkUI';
+import { router, promptAction } from '@kit.ArkUI';
 import { FavoriteRepository, FavoriteEntity } from '../utils/FavoriteRepository';
 import { WallpaperItem } from '../model/WallpaperModel';
 import { HapticFeedback } from '../utils/HapticFeedback';
+import { globalState } from '../common/GlobalState';
 import { EmptyStateComponent, EmptyStateType } from '../components/EmptyStateComponent';
 
 /**
@@ -19,8 +20,13 @@ struct FavoritesPage {
   }
 
   onPageShow() {
-    // 页面显示时刷新数据
-    this.loadFavorites();
+    // 页面显示时刷新数据，并过滤掉在详情页取消收藏的项
+    if (this.favorites.length > 0) {
+      this.favorites = this.favorites.filter(item => globalState.isFavorite(item.id));
+      this.isEmpty = this.favorites.length === 0;
+    } else {
+      this.loadFavorites();
+    }
   }
 
   /**
@@ -31,6 +37,11 @@ struct FavoritesPage {
     try {
       const entities = await FavoriteRepository.getFavorites();
       this.favorites = entities.map(entity => FavoriteRepository.toWallpaperItem(entity));
+      
+      // 同步到全局状态 (确保一致性)
+      const ids = this.favorites.map(f => f.id);
+      globalState.initFavorites(ids);
+      
       this.isEmpty = this.favorites.length === 0;
       console.info(`[FavoritesPage] 加载收藏列表，共 ${this.favorites.length} 条`);
     } catch (error) {
@@ -58,8 +69,32 @@ struct FavoritesPage {
    */
   async handleLongPress(wallpaper: WallpaperItem) {
     HapticFeedback.medium();
-    // 显示确认对话框
-    // 实际实现中可以使用 AlertDialog 或自定义弹窗
+    
+    AlertDialog.show({
+      title: '取消收藏',
+      message: '确定要将这张壁纸移出收藏吗？',
+      primaryButton: {
+        value: '取消',
+        action: () => {}
+      },
+      secondaryButton: {
+        value: '确定',
+        fontColor: '#FF5252',
+        action: async () => {
+          const success = await FavoriteRepository.removeFavorite(wallpaper.id);
+          if (success) {
+            // 同步全局状态
+            globalState.updateFavoriteStatus(wallpaper.id, false);
+            // 本地列表移除
+            this.favorites = this.favorites.filter(f => f.id !== wallpaper.id);
+            this.isEmpty = this.favorites.length === 0;
+            promptAction.showToast({ message: '已移除收藏' });
+            HapticFeedback.light();
+          }
+        }
+      }
+    });
+    
     console.info(`[FavoritesPage] 长按壁纸: ${wallpaper.id}`);
   }
 

@@ -15,6 +15,9 @@ export class MainViewModel {
   currentPage: number = 1;
   hasMoreData: boolean = true;
 
+  // 内部请求锁
+  private isRequesting: boolean = false;
+
   // 筛选条件状态 (多选)
   isCategoryGeneral: boolean = true;
   isCategoryAnime: boolean = true;
@@ -55,8 +58,23 @@ export class MainViewModel {
    * @param isLoadMore 是否为加载更多
    */
   async loadWallpapers(isLoadMore: boolean = false) {
-    if (this.isLoading || this.isLoadingMore) return;
+    // 检查是否已经在请求中，避免并发冲突
+    if (this.isRequesting) {
+      console.warn('[ViewModel] 已经在请求中，跳过本次请求');
+      // 如果不是加载更多，且当前正在刷新（由 UI 组件触发），需要确保将 isLoading 设回 false
+      if (!isLoadMore) {
+        this.isLoading = false;
+      }
+      return;
+    }
 
+    // 如果是加载更多但没有更多数据了，直接返回
+    if (isLoadMore && !this.hasMoreData) {
+      this.isLoadingMore = false;
+      return;
+    }
+
+    this.isRequesting = true;
     if (isLoadMore) {
       this.isLoadingMore = true;
     } else {
@@ -102,8 +120,10 @@ export class MainViewModel {
         this.dataSource.setData(this.getFallbackWallpapers());
       }
     } finally {
+      this.isRequesting = false;
       this.isLoading = false;
       this.isLoadingMore = false;
+      console.info('[ViewModel] 状态重置: isLoading = false');
     }
   }
 

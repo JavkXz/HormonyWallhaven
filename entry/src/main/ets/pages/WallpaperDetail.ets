@@ -10,6 +10,7 @@ import { AppConfig } from '../utils/AppConfig';
 import wallpaper from '@ohos.wallpaper';
 import { FavoriteRepository } from '../utils/FavoriteRepository';
 import { HapticFeedback } from '../utils/HapticFeedback';
+import { globalState } from '../common/GlobalState';
 
 // ----------------------------------------
 // 自定义精美选择弹窗 (浅色方案)
@@ -147,6 +148,9 @@ struct WallpaperDetail {
     try {
       const newStatus = await FavoriteRepository.toggleFavorite(this.wallpaper);
       this.isFavorite = newStatus;
+      
+      // 同步全局状态
+      globalState.updateFavoriteStatus(this.wallpaper.id, newStatus);
 
       if (newStatus) {
         HapticFeedback.success();
@@ -156,7 +160,7 @@ struct WallpaperDetail {
         promptAction.showToast({ message: '已取消收藏', duration: 2000 });
       }
 
-      console.info(`[WallpaperDetail] 收藏状态切换为: ${newStatus}`);
+      console.info(`[WallpaperDetail] 收藏状态切换为: ${newStatus}, 全局状态已同步`);
     } catch (error) {
       console.error('[WallpaperDetail] 切换收藏失败:', error);
       promptAction.showToast({ message: '操作失败，请重试', duration: 2000 });

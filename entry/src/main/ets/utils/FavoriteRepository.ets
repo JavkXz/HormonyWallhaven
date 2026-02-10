@@ -192,6 +192,28 @@ export class FavoriteRepository {
   }
 
   /**
+   * 获取所有收藏的壁纸 ID
+   * 用于初始化全局状态
+   * @returns ID 列表
+   */
+  static async getAllFavoriteIds(): Promise<string[]> {
+    try {
+      const store = await FavoriteRepository.getRdbStore();
+      const predicates = new relationalStore.RdbPredicates(FavoriteRepository.TABLE_NAME);
+      const resultSet = await store.query(predicates, ['wallpaper_id']);
+      const ids: string[] = [];
+      while (resultSet.goToNextRow()) {
+        ids.push(resultSet.getString(resultSet.getColumnIndex('wallpaper_id')));
+      }
+      resultSet.close();
+      return ids;
+    } catch (error) {
+      console.error('[FavoriteRepository] 获取 ID 列表失败:', error);
+      return [];
+    }
+  }
+
+  /**
    * 获取所有收藏
    * @returns 收藏列表（时间倒序）
    */
