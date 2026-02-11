@@ -71,15 +71,16 @@ export struct ModernWallpaperCard {
 
         // 3. 上层：顶部的收藏状态 (轻量化)
         if (globalState.isFavorite(this.wallpaper.id)) {
-          Circle({ width: 32, height: 32 })
-            .fill('rgba(255, 255, 255, 0.85)')
-            .backdropBlur(10)
-            .margin({ top: 10, right: 10 })
-            .overlay(
-              SymbolGlyph($r('sys.symbol.heart_fill'))
-                .fontSize(16)
-                .fontColor(['#FF5252'])
-            )
+          Stack() {
+            Circle({ width: 32, height: 32 })
+              .fill('rgba(255, 255, 255, 0.85)')
+              .backdropBlur(10)
+            
+            SymbolGlyph($r('sys.symbol.heart_fill'))
+              .fontSize(16)
+              .fontColor(['#FF5252'])
+          }
+          .margin({ top: 10, right: 10 })
         }
 
         // 4. 下层：信息浮层 (玻璃拟态增强)
