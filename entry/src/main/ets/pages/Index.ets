@@ -138,7 +138,7 @@ struct Index {
           // 3. 排序提示
           Row() {
             Row() {
-              SymbolGlyph($r('sys.symbol.chevron_up_chevron_down')).fontSize(12).fontColor(['#999999']).margin({ right: 4 })
+              SymbolGlyph($r('sys.symbol.chevron_down')).fontSize(12).fontColor(['#999999']).margin({ right: 4 })
               Text(`Sorted by ${this.currentSorting}`).fontSize(12).fontColor('#999999').fontWeight(FontWeight.Medium)
             }
             Blank()
