@@ -181,11 +181,16 @@ struct Index {
                 FlowItem() { Text('No more wallpapers').fontSize(12).fontColor('#BBB').width('100%').height(80).textAlign(TextAlign.Center) }.width('100%')
               }
             }
-            .columnsTemplate('1fr 1fr').columnsGap(16).rowsGap(16).width('100%').height('100%').padding({ left: 16, right: 16, bottom: 16 })
+            .columnsTemplate('1fr 1fr')
+            .columnsGap(12)
+            .rowsGap(12)
+            .width('100%')
+            .height('100%')
+            .padding({ left: 12, right: 12, bottom: 12 })
             .onReachEnd(() => { this.viewModel.loadMore(); })
           }
           .onRefreshing(() => { this.viewModel.loadWallpapers(false); })
-          .backgroundColor('#FFFFFF')
+          .backgroundColor('#F5F5F7')
 
           // 居中大动画 (仅在列表为空时显示)
           if (this.viewModel.isLoading && this.viewModel.dataSource.totalCount() === 0) {
@@ -193,7 +198,7 @@ struct Index {
               LoadingProgress().width(56).height(56).color('#2262db')
               Text('Discovering beauty...').fontSize(14).fontColor('#666').margin({ top: 16 })
             }
-            .width('100%').height('100%').backgroundColor('#FFFFFF').justifyContent(FlexAlign.Center).zIndex(1)
+            .width('100%').height('100%').backgroundColor('#F5F5F7').justifyContent(FlexAlign.Center).zIndex(1)
           }
 
           // 🚀 重新设计的刷新胶囊提示 (Pill Loading)
@@ -250,71 +255,112 @@ struct Index {
     Column() {
       // Sorting
       this.FilterTitle('Sorting')
-      Scroll() { Row() { ForEach(AppConstants.SORTING_OPTIONS, (o: SelectOption) => { SelectChip({ label: o.label, value: o.value, currentValue: this.currentSorting, onSelectAction: () => { this.currentSorting = o.value; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } }) }) }.padding({ left: 16, right: 16 }) }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).height(40)
+      Scroll() { 
+        Row() { 
+          ForEach(AppConstants.SORTING_OPTIONS, (o: SelectOption) => { 
+            ModernFilterChip({ 
+              label: o.label, 
+              isSelected: this.currentSorting === o.value, 
+              onClickAction: () => { 
+                this.currentSorting = o.value; 
+                this.syncViewModelFilters(); 
+                this.viewModel.loadWallpapers(); 
+              } 
+            }) 
+          }) 
+        }
+        .padding({ left: 16, right: 16 }) 
+      }
+      .scrollable(ScrollDirection.Horizontal)
+      .scrollBar(BarState.Off)
+      .height(44)
 
       // Purity
       this.FilterTitle('Purity')
-      Scroll() { Row() { 
-        FilterChip({ label: 'SFW', isSelected: this.isPuritySFW, onClickAction: () => { this.isPuritySFW = !this.isPuritySFW; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-        FilterChip({ label: 'Sketchy', isSelected: this.isPuritySketchy, onClickAction: () => { this.isPuritySketchy = !this.isPuritySketchy; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-      }.padding({ left: 16, right: 16 }) }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).height(40)
+      Scroll() { 
+        Row() { 
+          ModernFilterChip({ 
+            label: 'SFW', 
+            isSelected: this.isPuritySFW, 
+            onClickAction: () => { 
+              this.isPuritySFW = !this.isPuritySFW; 
+              this.syncViewModelFilters(); 
+              this.viewModel.loadWallpapers(); 
+            } 
+          })
+          ModernFilterChip({ 
+            label: 'Sketchy', 
+            isSelected: this.isPuritySketchy, 
+            onClickAction: () => { 
+              this.isPuritySketchy = !this.isPuritySketchy; 
+              this.syncViewModelFilters(); 
+              this.viewModel.loadWallpapers(); 
+            } 
+          })
+        }
+        .padding({ left: 16, right: 16 }) 
+      }
+      .scrollable(ScrollDirection.Horizontal)
+      .scrollBar(BarState.Off)
+      .height(44)
 
       // Time Range
       if (this.currentSorting === 'toplist') {
         this.FilterTitle('Time Range')
-        Scroll() { Row() { ForEach(AppConstants.TOPRANGE_OPTIONS, (o: SelectOption) => { SelectChip({ label: o.label, value: o.value, currentValue: this.viewModel.selectedTopRange, onSelectAction: () => { this.viewModel.selectedTopRange = o.value; this.viewModel.loadWallpapers(); } }) }) }.padding({ left: 16, right: 16 }) }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).height(40)
+        Scroll() { 
+          Row() { 
+            ForEach(AppConstants.TOPRANGE_OPTIONS, (o: SelectOption) => { 
+              ModernFilterChip({ 
+                label: o.label, 
+                isSelected: this.viewModel.selectedTopRange === o.value, 
+                onClickAction: () => { 
+                  this.viewModel.selectedTopRange = o.value; 
+                  this.viewModel.loadWallpapers(); 
+                } 
+              }) 
+            }) 
+          }
+          .padding({ left: 16, right: 16 }) 
+        }
+        .scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Off)
+        .height(44)
       }
 
       // Resolution
       this.FilterTitle('Resolution')
-      Scroll() { Row() { ForEach(AppConstants.RESOLUTION_OPTIONS, (o: SelectOption) => { SelectChip({ label: o.label, value: o.value, currentValue: this.viewModel.selectedResolution, onSelectAction: () => { this.viewModel.selectedResolution = o.value; this.viewModel.loadWallpapers(); } }) }) }.padding({ left: 16, right: 16 }) }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).height(40)
+      Scroll() { 
+        Row() { 
+          ForEach(AppConstants.RESOLUTION_OPTIONS, (o: SelectOption) => { 
+            ModernFilterChip({ 
+              label: o.label, 
+              isSelected: this.viewModel.selectedResolution === o.value, 
+              onClickAction: () => { 
+                this.viewModel.selectedResolution = o.value; 
+                this.viewModel.loadWallpapers(); 
+              } 
+            }) 
+          }) 
+        }
+        .padding({ left: 16, right: 16 }) 
+      }
+      .scrollable(ScrollDirection.Horizontal)
+      .scrollBar(BarState.Off)
+      .height(44)
     }
+    .padding({ bottom: 16 })
   }
 
   @Builder FilterTitle(title: string) {
-    Text(title).fontSize(12).fontColor('#999').margin({ top: 12, bottom: 8, left: 16 })
+    Text(title)
+      .fontSize(12)
+      .fontWeight(FontWeight.Bold)
+      .fontColor('#333333')
+      .margin({ top: 16, bottom: 10, left: 18 })
   }
 
   pageTransition() {
     PageTransitionEnter({ duration: 400, curve: Curve.Linear }).opacity(0)
     PageTransitionExit({ duration: 400, curve: Curve.Linear }).opacity(0)
-  }
-}
-
-// --- 子组件保持原有逻辑但稍微优化视觉 ---
-@Component
-struct WallpaperCardComponent {
-  @Prop wallpaper: WallpaperItem;
-  @State isLoaded: boolean = false;
-  build() {
-    Stack({ alignContent: Alignment.Bottom }) {
-      Image(this.wallpaper.thumbUrl).width('100%').aspectRatio(this.wallpaper.aspectRatio).objectFit(ImageFit.Fill).borderRadius(16).backgroundColor('#f2f3f5').opacity(this.isLoaded ? 1 : 0).geometryTransition(this.wallpaper.id).animation({ duration: 400, curve: Curve.EaseIn }).onComplete(() => { this.isLoaded = true; })
-      Column().width('100%').height(56).borderRadius({ bottomLeft: 16, bottomRight: 16 }).linearGradient({ angle: 180, colors: [['rgba(0,0,0,0)', 0.0], ['rgba(0,0,0,0.45)', 1.0]] }).hitTestBehavior(HitTestMode.None)
-      Row() {
-        Text(this.wallpaper.resolution || `${this.wallpaper.width}x${this.wallpaper.height}`).fontSize(10).fontColor('rgba(255,255,255,0.9)').padding({ left: 6, right: 6, top: 2, bottom: 2 }).backgroundColor('rgba(0,0,0,0.4)').borderRadius(4).backdropBlur(10)
-        Blank()
-        Row({ space: 4 }) {
-          SymbolGlyph(globalState.isFavorite(this.wallpaper.id) ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart')).fontSize(14).fontColor([globalState.isFavorite(this.wallpaper.id) ? '#FF5252' : '#ffffff'])
-          if (this.wallpaper.favorites && this.wallpaper.favorites > 0) { Text(`${this.wallpaper.favorites}`).fontSize(10).fontColor('#ffffff') }
-        }
-        .padding({ left: 8, right: 8, top: 4, bottom: 4 }).backgroundColor('rgba(0,0,0,0.2)').borderRadius(12)
-      }.width('100%').padding(8)
-    }.width('100%')
-  }
-}
-
-@Component
-struct FilterChip {
-  @Prop label: string; @Prop isSelected: boolean; onClickAction: () => void = () => {};
-  build() {
-    Text(this.label).fontSize(12).fontColor(this.isSelected ? '#ffffff' : '#666666').padding({ left: 16, right: 16, top: 6, bottom: 6 }).backgroundColor(this.isSelected ? '#2262db' : '#f0f0f0').borderRadius(16).margin({ right: 8 }).onClick(() => { if (this.onClickAction) this.onClickAction(); }).animation({ duration: 200 })
-  }
-}
-
-@Component
-struct SelectChip {
-  @Prop label: string; @Prop value: string; @Prop currentValue: string; onSelectAction: () => void = () => {};
-  build() {
-    Text(this.label).fontSize(12).fontColor(this.currentValue === this.value ? '#ffffff' : '#666666').padding({ left: 16, right: 16, top: 6, bottom: 6 }).backgroundColor(this.currentValue === this.value ? '#2262db' : '#f0f0f0').borderRadius(16).margin({ right: 8 }).onClick(() => { if (this.onSelectAction) this.onSelectAction(); }).animation({ duration: 200 })
   }
 }

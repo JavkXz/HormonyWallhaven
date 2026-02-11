@@ -268,90 +268,92 @@ struct WallpaperDetail {
 
   build() {
     Stack() {
-            if (this.wallpaper) {
-              // 1. 背景大图 (支持共享元素转场)
-              Image(this.wallpaper.imageUrl)
-                .width('100%')
-                .height('100%')
-                .objectFit(ImageFit.Contain)
-                .backgroundColor('#000000')
-                .geometryTransition(this.wallpaper.id) // 匹配首页的 ID
-                .onClick(() => { 
-                  this.isPanelVisible = !this.isPanelVisible; // 切换 完整/极简 模式
-                })
+      if (this.wallpaper) {
+        // 1. 沉浸式背景：模糊的壁纸大图，消除黑边
+        Image(this.wallpaper.imageUrl)
+          .width('100%')
+          .height('100%')
+          .objectFit(ImageFit.Cover)
+          .blur(50) // 高斯模糊效果
+          .opacity(0.3) // 调低透明度，使其作为背景不喧宾夺主
 
-        // 顶部导航栏
+        // 2. 主图层 (支持共享元素转场)
+        Image(this.wallpaper.imageUrl)
+          .width('100%')
+          .height('100%')
+          .objectFit(ImageFit.Contain)
+          .geometryTransition(this.wallpaper.id)
+          .onClick(() => { 
+            this.isPanelVisible = !this.isPanelVisible; 
+          })
+
+        // 顶部导航栏 (增加玻璃拟态)
         Row() {
-          // 返回按钮
           Button({ type: ButtonType.Circle }) {
-            SymbolGlyph($r('sys.symbol.chevron_left')).fontSize(24).fontColor(['#212121'])
+            SymbolGlyph($r('sys.symbol.chevron_left')).fontSize(24).fontColor(['#182431'])
           }
-          .width(44).height(44).backgroundColor('rgba(255,255,255,0.6)').backgroundBlurStyle(BlurStyle.Thin)
+          .width(44).height(44).backgroundColor('rgba(255,255,255,0.7)').backgroundBlurStyle(BlurStyle.Thin)
           .onClick(() => router.back())
           .margin({ left: 16, top: 48 })
 
           Blank()
 
-          // 收藏按钮
           Button({ type: ButtonType.Circle }) {
             SymbolGlyph(this.isFavorite ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart'))
               .fontSize(24)
-              .fontColor([this.isFavorite ? '#FF5252' : '#212121'])
+              .fontColor([this.isFavorite ? '#FF5252' : '#182431'])
           }
-          .width(44)
-          .height(44)
-          .backgroundColor('rgba(255,255,255,0.6)')
-          .backgroundBlurStyle(BlurStyle.Thin)
+          .width(44).height(44).backgroundColor('rgba(255,255,255,0.7)').backgroundBlurStyle(BlurStyle.Thin)
           .onClick(() => this.toggleFavorite())
           .margin({ right: 16, top: 48 })
         }
         .width('100%').position({ x: 0, y: 0 }).zIndex(10)
 
-        // 详情面板
+        // 详情面板 (增强质感)
         Column() {
-          // Handle - 拖动手柄，仅在完整模式下显示
+          // 拖动手柄
           Row() {
-            Column().width(44).height(5).backgroundColor('rgba(0, 0, 0, 0.15)').borderRadius(2.5)
+            Column().width(36).height(4).backgroundColor('rgba(0, 0, 0, 0.1)').borderRadius(2)
           }
           .width('100%')
-          .height(this.isPanelVisible ? 28 : 0)
+          .height(this.isPanelVisible ? 24 : 0)
           .visibility(this.isPanelVisible ? Visibility.Visible : Visibility.None)
           .justifyContent(FlexAlign.Center)
           .onClick(() => { this.isInfoExpanded = !this.isInfoExpanded; })
 
-          // 核心操作行 (始终显示)
+          // 核心操作行
           Row() {
             Column() {
               Text(this.wallpaper?.resolution || 'Original')
-                .fontSize(18).fontWeight(FontWeight.Bold).fontColor('#212121')
+                .fontSize(20).fontWeight(FontWeight.Bold).fontColor('#182431')
               Text(`${this.wallpaper?.category || 'General'} • ${(this.wallpaper?.purity || 'sfw').toUpperCase()}`)
-                .fontSize(12).fontColor('#757575').margin({ top: 4 })
+                .fontSize(12).fontColor('#666666').margin({ top: 4 })
             }
             .alignItems(HorizontalAlign.Start).layoutWeight(1)
 
-            Row({ space: 12 }) {
+            Row({ space: 10 }) {
               Button({ type: ButtonType.Capsule }) {
                 Row({ space: 6 }) {
                   if (this.isSetting) LoadingProgress().width(18).height(18).color('#ffffff')
                   else SymbolGlyph($r('sys.symbol.picture')).fontSize(18).fontColor(['#ffffff'])
-                  Text(this.isSetting ? 'Applying' : 'Set').fontSize(15).fontColor('#ffffff').fontWeight(FontWeight.Bold)
+                  Text(this.isSetting ? 'Applying' : 'Apply').fontSize(15).fontColor('#ffffff').fontWeight(FontWeight.Bold)
                 }
               }
-              .height(44).layoutWeight(1).backgroundColor('#2196F3')
-              .shadow({ radius: 12, color: 'rgba(33, 150, 243, 0.3)', offsetY: 4 })
+              .height(48).layoutWeight(1.2).backgroundColor('#007DFF')
+              .shadow({ radius: 15, color: 'rgba(0, 125, 255, 0.3)', offsetY: 6 })
               .onClick(() => {
-                this.isDialogActive = true; // 准备显示弹窗，面板完全收起
+                this.isDialogActive = true;
                 this.dialogController.open();
               })
               .enabled(!this.isSetting)
 
               if (this.isDownloading) {
-                Button() { LoadingProgress().width(18).height(18).color('#424242') }
-                .height(44).layoutWeight(1).backgroundColor('#F5F5F5').borderRadius(22)
+                Button() { LoadingProgress().width(20).height(20).color('#424242') }
+                .height(48).layoutWeight(0.8).backgroundColor('#F5F5F5').borderRadius(24)
               } else {
                 Row() {
                   SaveButton({ icon: SaveIconStyle.FULL_FILLED, text: SaveDescription.DOWNLOAD, buttonType: ButtonType.Capsule })
-                    .height(44)
+                    .height(48)
                     .fontColor('#424242')
                     .fontSize(15).fontWeight(FontWeight.Bold)
                     .backgroundColor('#F5F5F5')
@@ -359,58 +361,57 @@ struct WallpaperDetail {
                       if (result === SaveButtonOnClickResult.SUCCESS) this.saveWallpaper();
                     })
                 }
-                .layoutWeight(1)
+                .layoutWeight(0.8)
               }
             }
-            .layoutWeight(1).margin({ left: 24 })
+            .layoutWeight(1.2).margin({ left: 16 })
           }
-          .width('100%').height(80).padding({ left: 16, right: 16 })
+          .width('100%').height(80).padding({ left: 20, right: 20 })
 
-          // 扩展列表 (颜色/标签) - 仅在非极简模式下显示
+          // 扩展列表
           if (this.isPanelVisible) {
             List() {
-              if (this.wallpaper?.colors) {
+              if (this.wallpaper?.colors && this.wallpaper.colors.length > 0) {
                 ListItem() {
                   Row() {
-                    ForEach(this.wallpaper?.colors || [], (c: string) => {
-                      Circle({ width: 24, height: 24 }).fill(c).margin({ right: 8 }).stroke('rgba(0,0,0,0.05)').strokeWidth(1)
+                    ForEach(this.wallpaper.colors, (c: string) => {
+                      Circle({ width: 26, height: 26 }).fill(c).margin({ right: 10 }).stroke('rgba(0,0,0,0.05)').strokeWidth(1)
                     })
                   }
-                  .padding({ left: 16, top: 12, bottom: 16 })
+                  .padding({ left: 20, top: 12, bottom: 16 })
                 }
               }
-              if (this.wallpaper?.tags) {
+              if (this.wallpaper?.tags && this.wallpaper.tags.length > 0) {
                 ListItem() {
                   Row() {
-                    Text('#').fontSize(16).fontWeight(FontWeight.Bold).fontColor('#757575').margin({ right: 8 });
-                    Text('Keywords').fontSize(14).fontWeight(FontWeight.Bold).fontColor('#757575')
+                    Text('Keywords').fontSize(14).fontWeight(FontWeight.Bold).fontColor('#182431')
                   }
-                  .padding({ left: 16, bottom: 8 })
+                  .padding({ left: 20, bottom: 12 })
                 }
                 ListItem() {
                   Flex({ wrap: FlexWrap.Wrap }) {
-                    ForEach(this.wallpaper?.tags || [], (t: TagInfo) => this.TagChip(t))
+                    ForEach(this.wallpaper.tags, (t: TagInfo) => this.TagChip(t))
                   }
-                  .padding({ left: 16, right: 16, bottom: 32 })
+                  .padding({ left: 20, right: 20, bottom: 32 })
                 }
               }
-              ListItem().height(20)
+              ListItem().height(40)
             }
             .layoutWeight(1)
+            .edgeEffect(EdgeEffect.Spring)
           }
         }
         .width('100%')
-        // 核心高度逻辑：弹窗时 0，否则根据 isPanelVisible 决定是 35%/60% 还是 80vp
-        .height(this.isDialogActive ? 0 : (this.isPanelVisible ? (this.isInfoExpanded ? '60%' : '35%') : 80))
-        .backgroundColor('rgba(255, 255, 255, 0.92)')
+        .height(this.isDialogActive ? 0 : (this.isPanelVisible ? (this.isInfoExpanded ? '60%' : '35%') : 100))
+        .backgroundColor('rgba(255, 255, 255, 0.95)')
         .backgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THICK)
-        .borderRadius({ topLeft: 28, topRight: 28 })
-        .shadow({ radius: 24, color: 'rgba(0, 0, 0, 0.1)', offsetY: -4 })
+        .borderRadius({ topLeft: 32, topRight: 32 })
+        .shadow({ radius: 30, color: 'rgba(0, 0, 0, 0.1)', offsetY: -5 })
         .position({ x: 0, y: '100%' }).markAnchor({ x: 0, y: '100%' })
-        .animation({ duration: 300, curve: Curve.FastOutSlowIn })
+        .animation({ duration: 350, curve: Curve.FastOutSlowIn })
       }
     }
-    .width('100%').height('100%').backgroundColor('#000000')
+    .width('100%').height('100%').backgroundColor('#F5F5F5')
   }
 
   // 页面转场配置

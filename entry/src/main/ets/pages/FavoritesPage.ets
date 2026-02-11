@@ -4,6 +4,7 @@ import { WallpaperItem } from '../model/WallpaperModel';
 import { HapticFeedback } from '../utils/HapticFeedback';
 import { globalState } from '../common/GlobalState';
 import { EmptyStateComponent, EmptyStateType } from '../components/EmptyStateComponent';
+import { ModernWallpaperCard } from '../components/ModernComponents';
 
 /**
  * 我的收藏页面
@@ -110,36 +111,36 @@ struct FavoritesPage {
       // 标题栏
       Row() {
         // 返回按钮
-        SymbolGlyph($r('sys.symbol.chevron_left'))
-          .fontSize(24)
-          .fontColor(['#333333'])
-          .onClick(() => {
-            router.back();
-          })
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.chevron_left'))
+            .fontSize(22)
+            .fontColor(['#333333'])
+        }
+        .width(40).height(40).backgroundColor('transparent')
+        .onClick(() => {
+          router.back();
+        })
 
         Text('我的收藏')
-          .fontSize(18)
-          .fontColor('#333333')
-          .fontWeight(FontWeight.Medium)
+          .fontSize(20)
+          .fontColor('#182431')
+          .fontWeight(FontWeight.Bold)
           .layoutWeight(1)
           .textAlign(TextAlign.Center)
-
-        // 占位，保持标题居中
-        Blank()
-          .width(24)
+          .margin({ right: 40 }) // 抵消返回按钮宽度使文字居中
       }
       .width('100%')
-      .height(56)
+      .height(64)
       .padding({ left: 16, right: 16 })
       .backgroundColor('#FFFFFF')
 
       // 收藏列表
       if (this.isLoading) {
         Column() {
-          Progress({ value: 0, total: 100, type: ProgressType.ScaleRing })
-            .width(40)
-            .height(40)
-            .color('#2262db')
+          LoadingProgress()
+            .width(48)
+            .height(48)
+            .color('#007DFF')
           Text('加载中...')
             .fontSize(14)
             .fontColor('#999999')
@@ -165,17 +166,15 @@ struct FavoritesPage {
         WaterFlow({ scroller: new Scroller() }) {
           ForEach(this.favorites, (wallpaper: WallpaperItem, index: number) => {
             FlowItem() {
-              this.FavoriteCardBuilder(wallpaper)
+              ModernWallpaperCard({ wallpaper: wallpaper })
             }
             .width('100%')
             .gesture(
-              GestureGroup(GestureMode.Sequence,
-                // 点击手势
+              GestureGroup(GestureMode.Exclusive,
                 TapGesture()
                   .onAction(() => {
                     this.handleWallpaperClick(wallpaper);
                   }),
-                // 长按手势
                 LongPressGesture({ duration: 500 })
                   .onAction(() => {
                     this.handleLongPress(wallpaper);
@@ -185,67 +184,16 @@ struct FavoritesPage {
           }, (wallpaper: WallpaperItem) => wallpaper.id)
         }
         .columnsTemplate('1fr 1fr')
-        .columnsGap(8)
-        .rowsGap(8)
+        .columnsGap(12)
+        .rowsGap(12)
         .width('100%')
         .layoutWeight(1)
-        .padding(8)
+        .padding({ left: 12, right: 12, bottom: 12 })
       }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
-  }
-
-  /**
-   * 收藏卡片构建器
-   */
-  @Builder
-  FavoriteCardBuilder(wallpaper: WallpaperItem) {
-    Stack({ alignContent: Alignment.Bottom }) {
-      // 1. 图片层
-      Image(wallpaper.thumbUrl)
-        .width('100%')
-        .aspectRatio(wallpaper.aspectRatio || 1.78)
-        .objectFit(ImageFit.Fill)
-        .borderRadius(12)
-        .backgroundColor('#f5f5f5')
-        .alt($r('app.media.startIcon'))
-
-      // 2. 渐变遮罩层
-      Column()
-        .width('100%')
-        .height(50)
-        .borderRadius({ bottomLeft: 12, bottomRight: 12 })
-        .linearGradient({
-          angle: 180,
-          colors: [
-            ['rgba(0,0,0,0)', 0.0],
-            ['rgba(0,0,0,0.5)', 1.0]
-          ]
-        })
-        .hitTestBehavior(HitTestMode.None)
-
-      // 3. 信息层
-      Row() {
-        Text(wallpaper.resolution || 'Unknown')
-          .fontSize(10)
-          .fontColor('rgba(255,255,255,0.9)')
-          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-          .backgroundColor('rgba(0,0,0,0.4)')
-          .borderRadius(4)
-
-        Blank()
-
-        // 收藏图标（表示已收藏）
-        SymbolGlyph($r('sys.symbol.heart_fill'))
-          .fontSize(14)
-          .fontColor(['#FF5252'])
-      }
-      .width('100%')
-      .padding(8)
-    }
-    .width('100%')
+    .backgroundColor('#F5F5F7')
   }
 
   // 页面转场配置

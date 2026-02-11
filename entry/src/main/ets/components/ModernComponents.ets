@@ -14,17 +14,17 @@ export struct ModernFilterChip {
   build() {
     Row() {
       Text(this.label)
-        .fontSize(14)
+        .fontSize(13)
         .fontWeight(this.isSelected ? FontWeight.Bold : FontWeight.Medium)
-        .fontColor(this.isSelected ? '#FFFFFF' : '#182431')
+        .fontColor(this.isSelected ? '#FFFFFF' : '#666666')
     }
-    .padding({ left: 20, right: 20, top: 10, bottom: 10 })
-    .backgroundColor(this.isSelected ? '#007DFF' : 'rgba(0,0,0,0.03)')
-    .borderRadius(24)
-    .margin({ right: 12 })
-    .scale(this.isSelected ? { x: 1.02, y: 1.02 } : { x: 1, y: 1 })
-    .shadow(this.isSelected ? { radius: 15, color: 'rgba(0,125,255,0.25)', offsetY: 6 } : { radius: 0 })
-    .animation({ duration: 300, curve: Curve.Friction })
+    .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+    .backgroundColor(this.isSelected ? '#007DFF' : 'rgba(0,0,0,0.05)')
+    .borderRadius(20)
+    .margin({ right: 10 })
+    .scale(this.isSelected ? { x: 1.05, y: 1.05 } : { x: 1, y: 1 })
+    .shadow(this.isSelected ? { radius: 10, color: 'rgba(0,125,255,0.2)', offsetY: 4 } : { radius: 0 })
+    .animation({ duration: 250, curve: Curve.EaseInOut })
     .onClick(() => {
       if (this.onClickAction) this.onClickAction();
     })
@@ -33,7 +33,7 @@ export struct ModernFilterChip {
 
 /**
  * 彻底重构的现代壁纸卡片组件
- * 修复了顶部阴影问题，提升了沉浸感
+ * 采用悬浮图片布局，增加精致感与视觉层次
  */
 @Component
 export struct ModernWallpaperCard {
@@ -42,77 +42,86 @@ export struct ModernWallpaperCard {
 
   build() {
     Column() {
+      // 1. 图片容器区域 (增加内边距以产生悬浮感)
       Stack({ alignContent: Alignment.TopEnd }) {
-        // 1. 底层：动态骨架屏占位
+        // 底层：骨架屏 (同样带圆角和边距)
         if (!this.isImageLoaded) {
           Column()
             .width('100%')
             .height('100%')
             .backgroundColor('#F1F3F5')
-            .linearGradient({
-              angle: 90,
-              colors: [['#F1F3F5', 0], ['#E5E8EA', 0.5], ['#F1F3F5', 1]]
-            })
-            .borderRadius(20)
+            .borderRadius(10)
         }
 
-        // 2. 中层：壁纸图片 (强制铺满)
+        // 中层：壁纸图片 (全圆角，四周留空)
         Image(this.wallpaper.thumbUrl)
           .width('100%')
           .height('100%')
           .objectFit(ImageFit.Cover)
-          .borderRadius(20)
+          .borderRadius(10) // 减小图片圆角弧度
           .opacity(this.isImageLoaded ? 1 : 0)
+          .shadow({ radius: 15, color: 'rgba(0,0,0,0.15)', offsetY: 8 }) // 图片独立投影
           .animation({ duration: 400, curve: Curve.Sharp })
           .onComplete(() => {
             this.isImageLoaded = true;
           })
           .geometryTransition(this.wallpaper.id)
 
-        // 3. 上层：顶部的收藏状态 (轻量化)
+        // 上层：精美的收藏徽章
         if (globalState.isFavorite(this.wallpaper.id)) {
-          Stack() {
-            Circle({ width: 32, height: 32 })
-              .fill('rgba(255, 255, 255, 0.85)')
-              .backdropBlur(10)
-            
+          Row() {
             SymbolGlyph($r('sys.symbol.heart_fill'))
-              .fontSize(16)
+              .fontSize(10) // 缩小图标
               .fontColor(['#FF5252'])
           }
-          .margin({ top: 10, right: 10 })
+          .padding(5)
+          .margin({ top: 12, right: 12 })
+          .backgroundColor('rgba(255, 255, 255, 0.95)')
+          .backgroundBlurStyle(BlurStyle.Thin)
+          .borderRadius(10)
+          .shadow({ radius: 6, color: 'rgba(0,0,0,0.1)', offsetY: 3 })
         }
-
-        // 4. 下层：信息浮层 (玻璃拟态增强)
-        Column() {
-          Blank()
-          Row() {
-            Text(this.wallpaper.resolution || 'HD')
-              .fontSize(11)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#FFFFFF')
-              .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-              .backgroundColor('rgba(0,0,0,0.3)')
-              .backgroundBlurStyle(BlurStyle.Thin)
-              .borderRadius(8)
-          }
-          .width('100%')
-          .padding(12)
-        }
-        .width('100%')
-        .height('100%')
-        .borderRadius(20)
-        .linearGradient({
-          angle: 180,
-          colors: [['rgba(0,0,0,0)', 0.6], ['rgba(0,0,0,0.4)', 1]]
-        })
       }
       .width('100%')
-      .aspectRatio(this.wallpaper.aspectRatio || 0.7) // 关键：将比例应用在 Stack 容器上
+      .aspectRatio(this.wallpaper.aspectRatio || 0.7)
+      .padding({ left: 8, right: 8, top: 8 }) // 缩小图片与卡片边缘的间隙
+
+      // 2. 下层：信息区域
+      Column() {
+        Text(this.wallpaper.resolution || 'Ultra HD Wallpaper')
+          .fontSize(12)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#182431')
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .width('100%')
+
+        Row() {
+          Text(this.wallpaper.category || 'General')
+            .fontSize(10)
+            .fontColor('#888888')
+            .backgroundColor('#F5F5F7')
+            .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+            .borderRadius(4)
+          
+          Blank()
+          
+          Text((this.wallpaper.purity || 'sfw').toUpperCase())
+            .fontSize(9)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(this.wallpaper.purity === 'sketchy' ? '#E64A19' : '#007DFF')
+            .opacity(0.8)
+        }
+        .width('100%')
+        .margin({ top: 8 }) // 微调间距
+      }
+      .padding({ left: 12, right: 12, top: 10, bottom: 12 }) // 微调内边距
     }
     .width('100%')
     .borderRadius(20)
-    .shadow({ radius: 20, color: 'rgba(0,0,0,0.12)', offsetY: 10 })
-    .transition(TransitionEffect.OPACITY.combine(TransitionEffect.scale({ x: 0.95, y: 0.95 })))
+    .backgroundColor('#FFFFFF')
+    .clip(true) // 关键：开启剪裁，确保子组件不遮挡底部圆角
+    .shadow({ radius: 24, color: 'rgba(0,0,0,0.12)', offsetY: 12 })
+    .transition(TransitionEffect.OPACITY.combine(TransitionEffect.scale({ x: 0.98, y: 0.98 })))
   }
 }
