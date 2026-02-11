@@ -64,7 +64,7 @@ struct Index {
   build() {
     Stack() {
       Column() {
-        // 1. 顶部 Header & 搜索栏
+        // 1. 顶部 Header & 搜索栏 - 重新设计为悬浮感
         Column() {
           Row() {
             Search({
@@ -72,9 +72,9 @@ struct Index {
               placeholder: 'Search wallpapers...',
               controller: new SearchController()
             })
-              .height(40)
+              .height(46)
               .layoutWeight(1)
-              .backgroundColor('#f5f5f5')
+              .backgroundColor('rgba(0,0,0,0.05)')
               .placeholderColor('#999999')
               .onChange((value: string) => { this.viewModel.searchKeyword = value; })
               .onSubmit(async (value: string) => {
@@ -86,22 +86,25 @@ struct Index {
               .onFocus(() => { this.showSearchHistory = true; })
               .margin({ right: 12 })
 
-            // 收藏按钮
-            Button({ type: ButtonType.Circle }) {
-              SymbolGlyph($r('sys.symbol.heart')).fontSize(20).fontColor(['#ffffff'])
-            }
-            .width(40).height(40).backgroundColor('#FF6B6B').margin({ right: 8 })
-            .onClick(() => { router.pushUrl({ url: 'pages/FavoritesPage' }); })
+            // 快捷入口
+            Row({ space: 8 }) {
+              Button({ type: ButtonType.Circle }) {
+                SymbolGlyph($r('sys.symbol.heart_fill')).fontSize(22).fontColor(['#FF5252'])
+              }
+              .width(46).height(46).backgroundColor('rgba(255,82,82,0.1)')
+              .onClick(() => { router.pushUrl({ url: 'pages/FavoritesPage' }); })
 
-            Button({ type: ButtonType.Circle }) {
-              SymbolGlyph($r('sys.symbol.magnifyingglass')).fontSize(20).fontColor(['#ffffff'])
+              Button({ type: ButtonType.Circle }) {
+                SymbolGlyph($r('sys.symbol.magnifyingglass')).fontSize(22).fontColor(['#FFFFFF'])
+              }
+              .width(46).height(46).backgroundColor('#007DFF')
+              .shadow({ radius: 10, color: 'rgba(0,125,255,0.3)', offsetY: 4 })
+              .onClick(async () => {
+                if (this.viewModel.searchKeyword.trim()) await PreferencesUtil.addSearchKeyword(this.viewModel.searchKeyword.trim());
+                this.showSearchHistory = false;
+                this.viewModel.loadWallpapers();
+              })
             }
-            .width(40).height(40).backgroundColor('#2262db')
-            .onClick(async () => {
-              if (this.viewModel.searchKeyword.trim()) await PreferencesUtil.addSearchKeyword(this.viewModel.searchKeyword.trim());
-              this.showSearchHistory = false;
-              this.viewModel.loadWallpapers();
-            })
           }
           .width('100%')
 
@@ -114,12 +117,13 @@ struct Index {
                 this.viewModel.loadWallpapers();
               }
             })
-            .zIndex(100).backgroundColor('#FFFFFF').shadow({ radius: 4, color: 'rgba(0,0,0,0.1)', offsetY: 2 })
+            .zIndex(100).backgroundColor('#FFFFFF').shadow({ radius: 10, color: 'rgba(0,0,0,0.05)', offsetY: 5 })
+            .borderRadius(16).margin({ top: 8 })
           }
         }
-        .width('100%').padding({ left: 16, right: 16, top: 32, bottom: 8 })
+        .width('100%').padding({ left: 16, right: 16, top: 48, bottom: 12 })
 
-        // 2. 筛选栏
+        // 2. 筛选栏 - 增加间距和视觉呼吸感
         Column() {
           Scroll() {
             Row() {
@@ -129,35 +133,40 @@ struct Index {
             }
             .padding({ left: 16, right: 16 })
           }
-          .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%').height(50).align(Alignment.Start)
+          .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%').height(60).align(Alignment.Center)
 
-          // 3. 高级筛选展开按钮
+          // 3. 排序提示
           Row() {
-            Text(`Sorted by: ${this.currentSorting}`).fontSize(12).fontColor('#999999')
+            Row() {
+              SymbolGlyph($r('sys.symbol.arrow_up_arrow_down')).fontSize(12).fontColor(['#999999']).margin({ right: 4 })
+              Text(`Sorted by ${this.currentSorting}`).fontSize(12).fontColor('#999999').fontWeight(FontWeight.Medium)
+            }
             Blank()
             Row() {
-              Text(this.viewModel.isFilterExpanded ? 'Hide Filters' : 'More Filters').fontSize(12).fontColor('#2262db')
-              SymbolGlyph(this.viewModel.isFilterExpanded ? $r('sys.symbol.chevron_up') : $r('sys.symbol.chevron_down')).fontSize(14).fontColor(['#2262db']).margin({ left: 4 })
+              Text(this.viewModel.isFilterExpanded ? 'Hide Filters' : 'More Filters').fontSize(12).fontColor('#007DFF').fontWeight(FontWeight.Bold)
+              SymbolGlyph(this.viewModel.isFilterExpanded ? $r('sys.symbol.chevron_up') : $r('sys.symbol.chevron_down')).fontSize(14).fontColor(['#007DFF']).margin({ left: 4 })
             }
+            .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+            .backgroundColor('rgba(0,125,255,0.05)')
+            .borderRadius(14)
             .onClick(() => { this.viewModel.isFilterExpanded = !this.viewModel.isFilterExpanded; })
           }
-          .width('100%').padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .width('100%').padding({ left: 20, right: 20, top: 4, bottom: 12 })
 
           if (this.viewModel.isFilterExpanded) {
             Column() {
-              Divider().color('#f0f0f0')
               this.AdvancedFilterSection()
               Blank().height(16)
             }
-            .width('100%').backgroundColor('#fafafa').animation({ duration: 300 })
+            .width('100%').backgroundColor('#FFFFFF').animation({ duration: 300, curve: Curve.FastOutSlowIn })
           }
         }
-        .width('100%').backgroundColor('rgba(255, 255, 255, 0.85)').backgroundBlurStyle(BlurStyle.Thin).shadow({ radius: 20, color: 'rgba(0, 0, 0, 0.06)', offsetY: 4 }).zIndex(2)
+        .width('100%').backgroundColor('rgba(255, 255, 255, 0.8)').backgroundBlurStyle(BlurStyle.Thin)
 
         // 列表容器
         Stack({ alignContent: Alignment.Top }) {
           // 下拉刷新组件
-          Refresh({ refreshing: $$this.viewModel.isLoading }) {
+          Refresh({ refreshing: $this.viewModel.isLoading }) {
             WaterFlow({ scroller: new Scroller() }) {
               LazyForEach(this.viewModel.dataSource, (wallpaper: WallpaperItem) => {
                 FlowItem() { ModernWallpaperCard({ wallpaper: wallpaper }) }
@@ -166,17 +175,17 @@ struct Index {
               }, (item: WallpaperItem) => item.id)
 
               if (this.viewModel.isLoadingMore) {
-                FlowItem() { Column() { LoadingProgress().width(36).height(36).color('#2262db') }.width('100%').height(80).justifyContent(FlexAlign.Center) }.width('100%')
+                FlowItem() { Column() { LoadingProgress().width(32).height(32).color('#007DFF') }.width('100%').height(80).justifyContent(FlexAlign.Center) }.width('100%')
               }
               if (!this.viewModel.hasMoreData && this.viewModel.dataSource.totalCount() > 0) {
-                FlowItem() { Text('No more wallpapers').fontSize(12).fontColor('#999').width('100%').height(50).textAlign(TextAlign.Center) }.width('100%').height(50)
+                FlowItem() { Text('No more wallpapers').fontSize(12).fontColor('#BBB').width('100%').height(80).textAlign(TextAlign.Center) }.width('100%')
               }
             }
-            .columnsTemplate('1fr 1fr').columnsGap(12).rowsGap(12).width('100%').height('100%').padding(12)
+            .columnsTemplate('1fr 1fr').columnsGap(16).rowsGap(16).width('100%').height('100%').padding({ left: 16, right: 16, bottom: 16 })
             .onReachEnd(() => { this.viewModel.loadMore(); })
           }
           .onRefreshing(() => { this.viewModel.loadWallpapers(false); })
-          .backgroundColor('#F5F5F5')
+          .backgroundColor('#FFFFFF')
 
           // 居中大动画 (仅在列表为空时显示)
           if (this.viewModel.isLoading && this.viewModel.dataSource.totalCount() === 0) {
