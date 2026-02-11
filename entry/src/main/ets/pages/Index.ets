@@ -138,7 +138,7 @@ struct Index {
           // 3. 排序提示
           Row() {
             Row() {
-              SymbolGlyph($r('sys.symbol.arrow_up_arrow_down')).fontSize(12).fontColor(['#999999']).margin({ right: 4 })
+              SymbolGlyph($r('sys.symbol.chevron_up_chevron_down')).fontSize(12).fontColor(['#999999']).margin({ right: 4 })
               Text(`Sorted by ${this.currentSorting}`).fontSize(12).fontColor('#999999').fontWeight(FontWeight.Medium)
             }
             Blank()
@@ -166,7 +166,7 @@ struct Index {
         // 列表容器
         Stack({ alignContent: Alignment.Top }) {
           // 下拉刷新组件
-          Refresh({ refreshing: \$\$this.viewModel.isLoading }) {
+          Refresh({ refreshing: this.viewModel.isLoading }) {
             WaterFlow({ scroller: new Scroller() }) {
               LazyForEach(this.viewModel.dataSource, (wallpaper: WallpaperItem) => {
                 FlowItem() { ModernWallpaperCard({ wallpaper: wallpaper }) }
