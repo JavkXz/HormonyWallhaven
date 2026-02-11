@@ -1,5 +1,6 @@
 import { WallpaperItem } from '../model/WallpaperModel';
 import { AppConstants } from '../common/Constants';
+import { globalState } from '../common/GlobalState';
 
 /**
  * 现代风格的筛选标签组件
@@ -91,7 +92,7 @@ export struct ModernWallpaperCard {
         SymbolGlyph($r('sys.symbol.heart_fill'))
           .fontSize(16)
           .fontColor(['#FF5252'])
-          .visibility(this.wallpaper.isFavorite ? Visibility.Visible : Visibility.None)
+          .visibility(globalState.isFavorite(this.wallpaper.id) ? Visibility.Visible : Visibility.None)
       }
       .width('100%')
       .padding(12)
