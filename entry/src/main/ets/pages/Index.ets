@@ -1,3 +1,4 @@
+import { ModernFilterChip, ModernWallpaperCard } from '../components/ModernComponents';
 import { image } from '@kit.ImageKit';
 import { router } from '@kit.ArkUI';
 import { WallpaperItem } from '../model/WallpaperModel';
@@ -122,13 +123,13 @@ struct Index {
         Column() {
           Scroll() {
             Row() {
-              FilterChip({ label: 'General', isSelected: this.isCategoryGeneral, onClickAction: () => { this.isCategoryGeneral = !this.isCategoryGeneral; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-              FilterChip({ label: 'Anime', isSelected: this.isCategoryAnime, onClickAction: () => { this.isCategoryAnime = !this.isCategoryAnime; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-              FilterChip({ label: 'People', isSelected: this.isCategoryPeople, onClickAction: () => { this.isCategoryPeople = !this.isCategoryPeople; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+              ModernFilterChip({ label: 'General', isSelected: this.isCategoryGeneral, onClickAction: () => { this.isCategoryGeneral = !this.isCategoryGeneral; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+              ModernFilterChip({ label: 'Anime', isSelected: this.isCategoryAnime, onClickAction: () => { this.isCategoryAnime = !this.isCategoryAnime; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+              ModernFilterChip({ label: 'People', isSelected: this.isCategoryPeople, onClickAction: () => { this.isCategoryPeople = !this.isCategoryPeople; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
             }
             .padding({ left: 16, right: 16 })
           }
-          .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%').height(40).align(Alignment.Start)
+          .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%').height(50).align(Alignment.Start)
 
           // 3. 高级筛选展开按钮
           Row() {
@@ -159,7 +160,7 @@ struct Index {
           Refresh({ refreshing: $$this.viewModel.isLoading }) {
             WaterFlow({ scroller: new Scroller() }) {
               LazyForEach(this.viewModel.dataSource, (wallpaper: WallpaperItem) => {
-                FlowItem() { WallpaperCardComponent({ wallpaper: wallpaper }) }
+                FlowItem() { ModernWallpaperCard({ wallpaper: wallpaper }) }
                 .width('100%')
                 .onClick(() => { router.pushUrl({ url: 'pages/WallpaperDetail', params: { wallpaper: wallpaper } }); })
               }, (item: WallpaperItem) => item.id)
@@ -227,8 +228,8 @@ struct Index {
           .fontSize(24).fontColor(['#ffffff'])
           .symbolEffect(new PulseSymbolEffect(), this.viewModel.isLoading)
       }
-      .width(56).height(56).backgroundColor('#2262db').borderRadius(28)
-      .shadow({ radius: 8, color: 'rgba(34, 98, 219, 0.4)', offsetY: 4 })
+      .width(56).height(56).backgroundColor('#007DFF').borderRadius(28)
+      .shadow({ radius: 12, color: 'rgba(0, 125, 255, 0.4)', offsetY: 6 })
       .position({ x: '100%', y: '100%' }).markAnchor({ x: 76, y: 76 })
       .onClick(() => { this.viewModel.loadWallpapers(false); })
     }
