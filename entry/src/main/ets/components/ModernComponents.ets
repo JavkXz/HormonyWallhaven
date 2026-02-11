@@ -1,3 +1,4 @@
+import { WallpaperItem } from '../model/WallpaperModel';
 import { AppConstants } from '../common/Constants';
 
 /**
@@ -34,7 +35,7 @@ export struct ModernFilterChip {
  */
 @Component
 export struct ModernWallpaperCard {
-  @Prop wallpaper: any; // WallpaperItem 类型
+  @Prop wallpaper: WallpaperItem;
   @State isHover: boolean = false;
   @State isImageLoaded: boolean = false;
 
