@@ -68,7 +68,7 @@ struct WallpaperDetail {
   @State isImageLoaded: boolean = false;
   @State infoOpacity: number = 0;
   @State infoTranslateY: number = 40;
-  @State imageScale: number = 0.9;
+  @State imageScale: number = 0.92; // 略微增加初始缩放
   @State isDialogActive: boolean = false;
 
   dialogController: CustomDialogController = new CustomDialogController({
@@ -190,7 +190,7 @@ struct WallpaperDetail {
       Text(label).fontSize(12).fontColor('#FFFFFF').fontWeight(FontWeight.Medium)
     }
     .padding({ left: 12, right: 12, top: 8, bottom: 8 })
-    .backgroundColor('rgba(255, 255, 255, 0.15)')
+    .backgroundColor('rgba(255, 255, 255, 0.12)')
     .backgroundBlurStyle(BlurStyle.Thin)
     .borderRadius(16)
   }
@@ -200,24 +200,30 @@ struct WallpaperDetail {
       if (this.wallpaper !== null) {
         // 1. 视差背景层
         Image(this.wallpaper!.imageUrl)
-          .width('100%').height('100%').objectFit(ImageFit.Cover).blur(60).brightness(0.6).scale({ x: 1.2, y: 1.2 }) 
+          .width('100%').height('100%').objectFit(ImageFit.Cover).blur(60).brightness(0.5).scale({ x: 1.2, y: 1.2 }) 
 
+        // 2. 核心内容区 (统一画框布局)
         Scroll() {
           Column() {
+            // 图片展示区 - 统一边距与圆角，确保避让顶部按钮
             Stack() {
               Image(this.wallpaper!.imageUrl)
                 .width('100%').objectFit(ImageFit.Contain)
-                .borderRadius((this.wallpaper!.aspectRatio ?? 1) > 1 ? 24 : 0) 
-                .shadow({ radius: 40, color: 'rgba(0,0,0,0.4)', offsetY: 20 }).scale({ x: this.imageScale, y: this.imageScale })
+                .borderRadius(24) // 统一 24vp 圆角
+                .shadow({ radius: 50, color: 'rgba(0,0,0,0.45)', offsetY: 25 })
+                .scale({ x: this.imageScale, y: this.imageScale })
                 .geometryTransition(this.wallpaper!.id).onComplete(() => { this.isImageLoaded = true; })
             }
-            .width((this.wallpaper!.aspectRatio ?? 1) > 1.2 ? '90%' : '100%')
-            .margin({ top: (this.wallpaper!.aspectRatio ?? 1) > 1.2 ? '15%' : 0 }) 
+            .width('92%') // 统一 92% 宽度，产生呼吸感
+            .margin({ top: 120 }) // 显著增加顶部间距，彻底避让按钮
             
-            Column({ space: 20 }) {
-              Column({ space: 8 }) {
-                Text(this.wallpaper!.resolution || 'Ultra HD').fontSize(28).fontWeight(FontWeight.Bold).fontColor('#FFFFFF').shadow({ radius: 4, color: 'rgba(0,0,0,0.3)' })
-                Row({ space: 10 }) {
+            Column({ space: 24 }) {
+              Column({ space: 10 }) {
+                Text(this.wallpaper!.resolution || 'Ultra HD')
+                  .fontSize(30).fontWeight(FontWeight.Bold).fontColor('#FFFFFF')
+                  .shadow({ radius: 8, color: 'rgba(0,0,0,0.4)', offsetY: 2 })
+                
+                Row({ space: 12 }) {
                   this.InfoCapsule(this.wallpaper!.category || 'General', $r('sys.symbol.square_grid_2x2'))
                   this.InfoCapsule((this.wallpaper!.purity || 'sfw').toUpperCase(), $r('sys.symbol.lock'))
                 }
@@ -225,31 +231,40 @@ struct WallpaperDetail {
               .alignItems(HorizontalAlign.Start).width('100%').padding({ left: 24, right: 24 })
 
               if (this.wallpaper!.tags && this.wallpaper!.tags.length > 0) {
-                Flex({ wrap: FlexWrap.Wrap, space: { main: LengthMetrics.vp(8), cross: LengthMetrics.vp(8) } }) {
+                Flex({ wrap: FlexWrap.Wrap, space: { main: LengthMetrics.vp(10), cross: LengthMetrics.vp(10) } }) {
                   ForEach(this.wallpaper!.tags, (t: TagInfo) => {
-                    Text(`# ${t.name}`).fontSize(13).fontColor('rgba(255,255,255,0.8)').padding({ left: 14, right: 14, top: 8, bottom: 8 }).backgroundColor('rgba(255,255,255,0.1)').borderRadius(18)
+                    Text(`# ${t.name}`).fontSize(13).fontColor('rgba(255,255,255,0.85)')
+                      .padding({ left: 16, right: 16, top: 10, bottom: 10 })
+                      .backgroundColor('rgba(255,255,255,0.08)')
+                      .borderRadius(20)
                       .onClick(() => router.back({ url: 'pages/Index', params: { searchKeyword: t.name } }))
                   })
                 }
                 .padding({ left: 24, right: 24 })
               }
-              Blank().height(150)
+              Blank().height(180) // 增加底部预留空间
             }
-            .width('100%').margin({ top: 32 }).opacity(this.infoOpacity).translate({ y: this.infoTranslateY })
+            .width('100%').margin({ top: 40 }).opacity(this.infoOpacity).translate({ y: this.infoTranslateY })
           }
           .width('100%')
         }
         .scrollBar(BarState.Off).edgeEffect(EdgeEffect.Spring)
 
+        // 3. 顶部操作栏 (悬浮感按钮)
         Row() {
           Button({ type: ButtonType.Circle }) { SymbolGlyph($r('sys.symbol.chevron_left')).fontSize(24).fontColor(['#FFFFFF']) }
-          .width(44).height(44).backgroundColor('rgba(255,255,255,0.2)').backgroundBlurStyle(BlurStyle.Thin).onClick(() => router.back())
+          .width(48).height(48).backgroundColor('rgba(255,255,255,0.15)').backgroundBlurStyle(BlurStyle.Thin).onClick(() => router.back())
+          .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
+          
           Blank()
+          
           Button({ type: ButtonType.Circle }) { SymbolGlyph(this.isFavorite ? $r('sys.symbol.heart_fill') : $r('sys.symbol.heart')).fontSize(24).fontColor([this.isFavorite ? '#FF5252' : '#FFFFFF']) }
-          .width(44).height(44).backgroundColor('rgba(255,255,255,0.2)').backgroundBlurStyle(BlurStyle.Thin).onClick(() => this.toggleFavorite())
+          .width(48).height(48).backgroundColor('rgba(255,255,255,0.15)').backgroundBlurStyle(BlurStyle.Thin).onClick(() => this.toggleFavorite())
+          .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
         }
-        .width('100%').padding({ left: 16, right: 16, top: 48, bottom: 16 }).zIndex(100)
+        .width('100%').padding({ left: 20, right: 20, top: 48, bottom: 16 }).zIndex(100)
 
+        // 4. 底部固定的“灵动操作岛”
         Row({ space: 16 }) {
           Button({ type: ButtonType.Capsule }) {
             Row({ space: 8 }) {
@@ -258,15 +273,15 @@ struct WallpaperDetail {
               Text(this.isSetting ? 'Applying...' : 'Set Wallpaper').fontSize(16).fontWeight(FontWeight.Bold).fontColor('#FFFFFF')
             }
           }
-          .height(56).layoutWeight(1).backgroundColor('#007DFF').shadow({ radius: 20, color: 'rgba(0,125,255,0.4)', offsetY: 8 }).onClick(() => { this.isDialogActive = true; this.dialogController.open(); }).enabled(!this.isSetting)
+          .height(58).layoutWeight(1).backgroundColor('#007DFF').shadow({ radius: 25, color: 'rgba(0,125,255,0.45)', offsetY: 10 }).onClick(() => { this.isDialogActive = true; this.dialogController.open(); }).enabled(!this.isSetting)
 
           Button({ type: ButtonType.Circle }) {
             if (this.isDownloading) LoadingProgress().width(24).height(24).color('#182431')
             else SymbolGlyph($r('sys.symbol.square_and_arrow_down')).fontSize(24).fontColor(['#182431'])
           }
-          .width(56).height(56).backgroundColor('#FFFFFF').shadow({ radius: 20, color: 'rgba(0,0,0,0.15)', offsetY: 8 }).onClick(() => this.saveWallpaper()).enabled(!this.isDownloading)
+          .width(58).height(58).backgroundColor('#FFFFFF').shadow({ radius: 25, color: 'rgba(0,0,0,0.2)', offsetY: 10 }).onClick(() => this.saveWallpaper()).enabled(!this.isDownloading)
         }
-        .width('90%').position({ x: '5%', y: '100%' }).markAnchor({ x: 0, y: '100%' }).margin({ bottom: 40 }).zIndex(110)
+        .width('92%').position({ x: '4%', y: '100%' }).markAnchor({ x: 0, y: '100%' }).margin({ bottom: 40 }).zIndex(110)
       }
     }
     .width('100%').height('100%').backgroundColor('#000000')
