@@ -198,24 +198,56 @@ struct WallpaperDetail {
   build() {
     Stack({ alignContent: Alignment.Top }) {
       if (this.wallpaper !== null) {
-        // 1. 视差背景层
-        Image(this.wallpaper!.imageUrl)
-          .width('100%').height('100%').objectFit(ImageFit.Cover).blur(60).brightness(0.5).scale({ x: 1.2, y: 1.2 }) 
+        // 1. 视差背景层 (层叠加载逻辑)
+        Stack() {
+          // 缩略图模糊背景 (立即显示)
+          Image(this.wallpaper!.thumbUrl)
+            .width('100%').height('100%').objectFit(ImageFit.Cover).blur(60).brightness(0.4).scale({ x: 1.2, y: 1.2 }) 
+          
+          // 原图模糊背景 (加载后覆盖)
+          Image(this.wallpaper!.imageUrl)
+            .width('100%').height('100%').objectFit(ImageFit.Cover).blur(60).brightness(0.4).scale({ x: 1.2, y: 1.2 })
+            .opacity(this.isImageLoaded ? 1 : 0)
+            .animation({ duration: 800, curve: Curve.EaseInOut })
+        }
 
         // 2. 核心内容区 (统一画框布局)
         Scroll() {
           Column() {
-            // 图片展示区 - 统一边距与圆角，确保避让顶部按钮
+            // 图片展示区
             Stack() {
+              // A. 缩略图占位 (大幅模糊，体现加载中)
+              Image(this.wallpaper!.thumbUrl)
+                .width('100%')
+                .objectFit(ImageFit.Contain)
+                .borderRadius(24)
+                .blur(20) // 显著提高模糊度
+                .opacity(this.isImageLoaded ? 0 : 1)
+                .animation({ duration: 400 })
+
+              // B. 显式加载进度条 (仅加载中显示)
+              if (!this.isImageLoaded) {
+                LoadingProgress()
+                  .width(40).height(40)
+                  .color('rgba(255,255,255,0.6)')
+              }
+
+              // C. 原图展示 (加载后渐现)
               Image(this.wallpaper!.imageUrl)
                 .width('100%').objectFit(ImageFit.Contain)
-                .borderRadius(24) // 统一 24vp 圆角
+                .borderRadius(24) 
                 .shadow({ radius: 50, color: 'rgba(0,0,0,0.45)', offsetY: 25 })
                 .scale({ x: this.imageScale, y: this.imageScale })
-                .geometryTransition(this.wallpaper!.id).onComplete(() => { this.isImageLoaded = true; })
+                .geometryTransition(this.wallpaper!.id)
+                .opacity(this.isImageLoaded ? 1 : 0)
+                .onComplete(() => { 
+                  animateTo({ duration: 600, curve: Curve.EaseInOut }, () => {
+                    this.isImageLoaded = true; 
+                  })
+                })
             }
-            .width('92%') // 统一 92% 宽度，产生呼吸感
-            .margin({ top: 120 }) // 显著增加顶部间距，彻底避让按钮
+            .width('92%') // 强制统一 92% 宽度，修复竖图边距消失问题
+            .margin({ top: 88 }) 
             
             Column({ space: 24 }) {
               Column({ space: 10 }) {
@@ -262,7 +294,7 @@ struct WallpaperDetail {
           .width(48).height(48).backgroundColor('rgba(255,255,255,0.15)').backgroundBlurStyle(BlurStyle.Thin).onClick(() => this.toggleFavorite())
           .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
         }
-        .width('100%').padding({ left: 20, right: 20, top: 48, bottom: 16 }).zIndex(100)
+        .width('100%').padding({ left: 20, right: 20, top: 16, bottom: 16 }).zIndex(100)
 
         // 4. 底部固定的“灵动操作岛”
         Row({ space: 16 }) {
@@ -288,7 +320,9 @@ struct WallpaperDetail {
   }
 
   pageTransition() {
-    PageTransitionEnter({ duration: 600, curve: Curve.LinearOutSlowIn }).opacity(0)
-    PageTransitionExit({ duration: 600, curve: Curve.LinearOutSlowIn }).opacity(0)
+    // 入场：快速切入，350ms 黄金时长
+    PageTransitionEnter({ duration: 300, curve: Curve.FastOutSlowIn }).opacity(0)
+    // 出场：干脆利落，不拖泥带水
+    PageTransitionExit({ duration: 300, curve: Curve.FastOutSlowIn }).opacity(0)
   }
 }

@@ -122,6 +122,5 @@ export struct ModernWallpaperCard {
     .backgroundColor('#FFFFFF')
     .clip(true) // 关键：开启剪裁，确保子组件不遮挡底部圆角
     .shadow({ radius: 24, color: 'rgba(0,0,0,0.12)', offsetY: 12 })
-    .transition(TransitionEffect.OPACITY.combine(TransitionEffect.scale({ x: 0.98, y: 0.98 })))
   }
 }

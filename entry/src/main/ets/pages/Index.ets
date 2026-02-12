@@ -360,7 +360,7 @@ struct Index {
   }
 
   pageTransition() {
-    PageTransitionEnter({ duration: 400, curve: Curve.Linear }).opacity(0)
-    PageTransitionExit({ duration: 400, curve: Curve.Linear }).opacity(0)
+    PageTransitionEnter({ duration: 350, curve: Curve.FastOutSlowIn }).opacity(0)
+    PageTransitionExit({ duration: 350, curve: Curve.FastOutSlowIn }).opacity(0)
   }
 }
