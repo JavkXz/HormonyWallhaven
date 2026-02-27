@@ -4,6 +4,7 @@ import { AppConfig } from '../utils/AppConfig';
 struct SettingsPage {
   @State apiKey: string = '';
   @State message: string = '设置';
+  @StorageProp('statusBarHeight') statusBarHeight: number = 48;
   
   build() {
     Column() {
@@ -28,8 +29,7 @@ struct SettingsPage {
           })
       }
       .width('100%')
-      .height(50)
-      .padding({ left: 16, right: 16 })
+      .padding({ left: 16, right: 16, top: this.statusBarHeight })
       .alignItems(VerticalAlign.Center)
       .backgroundColor('#ffffff')
 
@@ -71,11 +71,7 @@ struct SettingsPage {
             console.info('API密钥已保存');
           })
       }
-      .width('100%')
       .padding({ top: 20 })
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#f0f0f0')
-  }
+    .width('100%').height('100%').backgroundColor('#f0f0f0')
 }

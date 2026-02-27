@@ -15,6 +15,7 @@ struct FavoritesPage {
   @State favorites: WallpaperItem[] = [];
   @State isLoading: boolean = false;
   @State isEmpty: boolean = false;
+  @StorageProp('statusBarHeight') statusBarHeight: number = 48;
 
   aboutToAppear() {
     this.loadFavorites();
@@ -130,8 +131,7 @@ struct FavoritesPage {
           .margin({ right: 40 }) // 抵消返回按钮宽度使文字居中
       }
       .width('100%')
-      .height(64)
-      .padding({ left: 16, right: 16 })
+      .padding({ left: 16, right: 16, top: this.statusBarHeight })
       .backgroundColor('#FFFFFF')
 
       // 收藏列表
@@ -191,9 +191,7 @@ struct FavoritesPage {
         .padding({ left: 12, right: 12, bottom: 12 })
       }
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#F5F5F7')
+    .width('100%').height('100%').backgroundColor('#F5F5F7')
   }
 
   // 页面转场配置

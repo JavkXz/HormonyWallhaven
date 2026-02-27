@@ -14,7 +14,6 @@ export class AppConstants {
 
   static readonly SORTING_OPTIONS: SelectOption[] = [
     { value: 'date_added', label: 'Latest' },
-    { value: 'relevance', label: 'Relevance' },
     { value: 'random', label: 'Random' },
     { value: 'views', label: 'Most Viewed' },
     { value: 'favorites', label: 'Most Fav' },

@@ -70,6 +70,8 @@ struct WallpaperDetail {
   @State infoTranslateY: number = 40;
   @State imageScale: number = 0.92; // 略微增加初始缩放
   @State isDialogActive: boolean = false;
+  @StorageProp('statusBarHeight') statusBarHeight: number = 48;
+  @StorageProp('bottomBarHeight') bottomBarHeight: number = 28;
 
   dialogController: CustomDialogController = new CustomDialogController({
     builder: WallpaperSelectDialog({
@@ -88,6 +90,7 @@ struct WallpaperDetail {
   })
 
   aboutToAppear() {
+
     const params = router.getParams() as Record<string, Object>;
     if (params && params.wallpaper) {
       this.wallpaper = params.wallpaper as WallpaperItem;
@@ -247,7 +250,7 @@ struct WallpaperDetail {
                 })
             }
             .width('92%') // 强制统一 92% 宽度，修复竖图边距消失问题
-            .margin({ top: 88 }) 
+            .margin({ top: this.statusBarHeight + 72 }) // 状态栏高度 + 操作栏(8+48+16)间距
             
             Column({ space: 24 }) {
               Column({ space: 10 }) {
@@ -294,7 +297,7 @@ struct WallpaperDetail {
           .width(48).height(48).backgroundColor('rgba(255,255,255,0.15)').backgroundBlurStyle(BlurStyle.Thin).onClick(() => this.toggleFavorite())
           .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
         }
-        .width('100%').padding({ left: 20, right: 20, top: 16, bottom: 16 }).zIndex(100)
+        .width('100%').padding({ left: 20, right: 20, top: this.statusBarHeight + 8, bottom: 16 }).zIndex(100)
 
         // 4. 底部固定的“灵动操作岛”
         Row({ space: 16 }) {
@@ -313,7 +316,10 @@ struct WallpaperDetail {
           }
           .width(58).height(58).backgroundColor('#FFFFFF').shadow({ radius: 25, color: 'rgba(0,0,0,0.2)', offsetY: 10 }).onClick(() => this.saveWallpaper()).enabled(!this.isDownloading)
         }
-        .width('92%').position({ x: '4%', y: '100%' }).markAnchor({ x: 0, y: '100%' }).margin({ bottom: 40 }).zIndex(110)
+        .width('100%')
+        .padding({ left: 24, right: 24, bottom: this.bottomBarHeight + 12 })
+        .position({ x: 0, y: '100%' })
+        .markAnchor({ x: 0, y: '100%' })
       }
     }
     .width('100%').height('100%').backgroundColor('#000000')

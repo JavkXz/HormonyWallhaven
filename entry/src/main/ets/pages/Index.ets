@@ -30,6 +30,10 @@ struct Index {
   @State currentRatio: string = '';
   @State showSearchHistory: boolean = false;
 
+  // 安全区域高度（从 AppStorage 全局读取）
+  @StorageProp('statusBarHeight') statusBarHeight: number = 48;
+  @StorageProp('bottomBarHeight') bottomBarHeight: number = 28;
+
   // 沉浸式滚动联动状态
   @State isScrolledDown: boolean = false;
   @State isToolbarVisible: boolean = true;
@@ -255,7 +259,7 @@ struct Index {
           }
         }
         .width('100%')
-        .padding({ left: 20, right: 20, top: 16, bottom: 8 })
+        .padding({ left: 20, right: 20, top: this.statusBarHeight + 12, bottom: 8 })
         .alignItems(this.isScrolledDown && !this.isSearchExpanded ? HorizontalAlign.Center : HorizontalAlign.Start)
         .animation({ duration: 350, curve: Curve.FastOutSlowIn })
 
@@ -368,10 +372,8 @@ struct Index {
             .width('100%').height('100%').backgroundColor('transparent').justifyContent(FlexAlign.Center)
           }
         }
-        .width('100%').layoutWeight(1)
       }
       .width('100%').height('100%')
-
       // 浮动刷新按钮
       Button({ type: ButtonType.Circle }) {
         SymbolGlyph($r('sys.symbol.arrow_clockwise'))
@@ -381,7 +383,7 @@ struct Index {
       .width(56).height(56)
       .backgroundColor('#007DFF')
       .shadow({ radius: 15, color: 'rgba(0, 125, 255, 0.45)', offsetY: 8 })
-      .position({ x: '100%', y: '100%' }).markAnchor({ x: 76, y: 76 })
+      .position({ x: '100%', y: '100%' }).markAnchor({ x: 76, y: this.bottomBarHeight + 48 })
       .onClick(() => { this.viewModel.loadWallpapers(false); })
     }
     .width('100%').height('100%').backgroundColor('#000000')
