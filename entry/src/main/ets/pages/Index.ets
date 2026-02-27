@@ -14,32 +14,36 @@ import { SearchHistoryComponent } from '../components/SearchHistoryComponent';
 struct Index {
   @State viewModel: MainViewModel = new MainViewModel();
 
-  // 本地筛选状态 (确保 UI 响应性)
+  // 本地筛选状态
   @State isCategoryGeneral: boolean = true;
   @State isCategoryAnime: boolean = true;
   @State isCategoryPeople: boolean = true;
   @State isPuritySFW: boolean = true;
   @State isPuritySketchy: boolean = false;
   @State isPurityNSFW: boolean = false;
-  
+
   // 本地排序状态
   @State currentSorting: string = 'toplist';
-  @State showSearchHistory: boolean = false; // 是否显示搜索历史
+  @State showSearchHistory: boolean = false;
+
+  // 沉浸式滚动联动状态
+  @State isScrolledDown: boolean = false;
+  @State isToolbarVisible: boolean = true;
+  @State isSearchExpanded: boolean = false;
+  private lastScrollOffset: number = 0;
 
   async aboutToAppear() {
     console.info('[Index] 页面加载完成');
     this.syncViewModelFilters();
     this.currentSorting = this.viewModel.selectedSorting;
-    
-    // 初始化全局收藏状态
+
     const favoriteIds = await FavoriteRepository.getAllFavoriteIds();
     globalState.initFavorites(favoriteIds);
-    
+
     this.viewModel.loadWallpapers();
   }
 
   onPageShow() {
-    // 检查是否有返回参数
     const params = router.getParams() as Record<string, Object>;
     if (params && params.searchKeyword) {
       const newKeyword = params.searchKeyword as string;
@@ -50,7 +54,6 @@ struct Index {
     }
   }
 
-  // 同步状态到 ViewModel
   private syncViewModelFilters() {
     this.viewModel.isCategoryGeneral = this.isCategoryGeneral;
     this.viewModel.isCategoryAnime = this.isCategoryAnime;
@@ -61,111 +64,188 @@ struct Index {
     this.viewModel.selectedSorting = this.currentSorting;
   }
 
+  private getSortingLabel(): string {
+    const option = AppConstants.SORTING_OPTIONS.find((o: SelectOption) => o.value === this.currentSorting);
+    return option ? option.label : this.currentSorting;
+  }
+
   build() {
     Stack() {
+      // 0. 底层沉浸式背景组件 (使用子组件确保响应式更新)
+      BackgroundWallpaper({ 
+        url: this.viewModel.firstWallpaper ? this.viewModel.firstWallpaper.thumbUrl : '' 
+      })
+
       Column() {
-        // 1. 顶部 Header & 搜索栏 - 重新设计为悬浮感
+        // ═══════ 顶部操作栏（统一详情页设计语言）═══════
         Column() {
-          Row() {
-            Search({
-              value: this.viewModel.searchKeyword,
-              placeholder: 'Search wallpapers...',
-              controller: new SearchController()
-            })
-              .height(46)
-              .layoutWeight(1)
-              .backgroundColor('rgba(0,0,0,0.05)')
-              .placeholderColor('#999999')
-              .onChange((value: string) => { this.viewModel.searchKeyword = value; })
-              .onSubmit(async (value: string) => {
-                this.viewModel.searchKeyword = value;
-                this.showSearchHistory = false;
-                if (value.trim()) await PreferencesUtil.addSearchKeyword(value.trim());
-                this.viewModel.loadWallpapers();
-              })
-              .onFocus(() => { this.showSearchHistory = true; })
-              .margin({ right: 12 })
+          if (!this.isScrolledDown || this.isSearchExpanded) {
+            // ── 完整态：搜索栏 + 操作按钮 ──
+            Column() {
+              // Row 1: 搜索框 + 搜索按钮
+              Row({ space: 10 }) {
+                Search({
+                  value: this.viewModel.searchKeyword,
+                  placeholder: 'Search wallpapers...',
+                  controller: new SearchController()
+                })
+                  .height(42)
+                  .layoutWeight(1)
+                  .backgroundColor('rgba(255,255,255,0.15)')
+                  .backgroundBlurStyle(BlurStyle.Thin)
+                  .borderRadius(24)
+                  .border({ width: 0.5, color: 'rgba(255,255,255,0.15)' })
+                  .placeholderColor('rgba(255,255,255,0.45)')
+                  .fontColor('#FFFFFF')
+                  .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
+                  .onChange((value: string) => { this.viewModel.searchKeyword = value; })
+                  .onSubmit(async (value: string) => {
+                    this.viewModel.searchKeyword = value;
+                    this.showSearchHistory = false;
+                    this.isSearchExpanded = false;
+                    if (value.trim()) await PreferencesUtil.addSearchKeyword(value.trim());
+                    this.viewModel.loadWallpapers();
+                  })
+                  .onFocus(() => { this.showSearchHistory = true; })
 
-            // 快捷入口
-            Row({ space: 8 }) {
-              Button({ type: ButtonType.Circle }) {
-                SymbolGlyph($r('sys.symbol.heart_fill')).fontSize(22).fontColor(['#FF5252'])
+                // 搜索按钮 (36px, 与搜索框同高协调)
+                Button({ type: ButtonType.Circle }) {
+                  SymbolGlyph($r('sys.symbol.magnifyingglass')).fontSize(18).fontColor(['#FFFFFF'])
+                }
+                .width(42).height(42) // 42px 保持一致
+                .backgroundColor('#007DFF')
+                .shadow({ radius: 15, color: 'rgba(0,125,255,0.4)', offsetY: 6 })
+                .onClick(async () => {
+                  if (this.viewModel.searchKeyword.trim()) await PreferencesUtil.addSearchKeyword(this.viewModel.searchKeyword.trim());
+                  this.showSearchHistory = false;
+                  this.isSearchExpanded = false;
+                  this.viewModel.loadWallpapers();
+                })
               }
-              .width(46).height(46).backgroundColor('rgba(255,82,82,0.1)')
-              .onClick(() => { router.pushUrl({ url: 'pages/FavoritesPage' }); })
+              .width('100%')
 
-              Button({ type: ButtonType.Circle }) {
-                SymbolGlyph($r('sys.symbol.magnifyingglass')).fontSize(22).fontColor(['#FFFFFF'])
+              // Row 2: 排序胶囊 (左对齐) + 占位 + 筛选 + 收藏 (右对齐)
+              Row({ space: 10 }) {
+                // 排序胶囊 (移除图标，仅保留文字)
+                Row() {
+                  Text(this.getSortingLabel())
+                    .fontSize(13)
+                    .fontColor('#FFFFFF')
+                    .fontWeight(FontWeight.Medium)
+                }
+                .height(36)
+                .padding({ left: 16, right: 16 })
+                .backgroundColor('rgba(255,255,255,0.15)')
+                .backgroundBlurStyle(BlurStyle.Thin)
+                .borderRadius(24)
+                .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
+                .onClick(() => {
+                  const options = AppConstants.SORTING_OPTIONS;
+                  const currentIndex = options.findIndex((o: SelectOption) => o.value === this.currentSorting);
+                  const nextIndex = (currentIndex + 1) % options.length;
+                  this.currentSorting = options[nextIndex].value;
+                  this.syncViewModelFilters();
+                  this.viewModel.loadWallpapers();
+                })
+
+                Blank()
+
+                // 筛选按钮 (尺寸 36px)
+                Button({ type: ButtonType.Circle }) {
+                  SymbolGlyph($r('sys.symbol.line_3_horizontal'))
+                    .fontSize(18)
+                    .fontColor([this.viewModel.isFilterExpanded ? '#007DFF' : '#FFFFFF'])
+                }
+                .width(36).height(36)
+                .backgroundColor(this.viewModel.isFilterExpanded ? 'rgba(0,125,255,0.2)' : 'rgba(255,255,255,0.15)')
+                .backgroundBlurStyle(BlurStyle.Thin)
+                .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
+                .onClick(() => { this.viewModel.isFilterExpanded = !this.viewModel.isFilterExpanded; })
+
+                // 收藏按钮 (尺寸 36px)
+                Button({ type: ButtonType.Circle }) {
+                  SymbolGlyph($r('sys.symbol.heart_fill')).fontSize(18).fontColor(['#FF5252'])
+                }
+                .width(36).height(36)
+                .backgroundColor('rgba(255,255,255,0.15)')
+                .backgroundBlurStyle(BlurStyle.Thin)
+                .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
+                .onClick(() => { router.pushUrl({ url: 'pages/FavoritesPage' }); })
               }
-              .width(46).height(46).backgroundColor('#007DFF')
-              .shadow({ radius: 10, color: 'rgba(0,125,255,0.3)', offsetY: 4 })
-              .onClick(async () => {
-                if (this.viewModel.searchKeyword.trim()) await PreferencesUtil.addSearchKeyword(this.viewModel.searchKeyword.trim());
-                this.showSearchHistory = false;
-                this.viewModel.loadWallpapers();
-              })
+              .width('100%')
+              .margin({ top: 12 }) // 增加行间距
             }
-          }
-          .width('100%')
+            .transition(TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: -20 })))
+          } else {
+            // ── 胶囊态（滚动收缩）──
+            Row() {
+              SymbolGlyph($r('sys.symbol.magnifyingglass'))
+                .fontSize(16)
+                .fontColor(['rgba(255,255,255,0.6)'])
+                .margin({ right: 8 })
+              Text(this.viewModel.searchKeyword || 'Search...')
+                .fontSize(13)
+                .fontColor(this.viewModel.searchKeyword ? '#FFFFFF' : 'rgba(255,255,255,0.45)')
+                .fontWeight(FontWeight.Medium)
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .layoutWeight(1)
 
-          if (this.showSearchHistory) {
+              SymbolGlyph($r('sys.symbol.heart_fill'))
+                .fontSize(18)
+                .fontColor(['#FF5252'])
+                .margin({ left: 12 })
+                .onClick(() => { router.pushUrl({ url: 'pages/FavoritesPage' }); })
+            }
+            .width('55%')
+            .height(40)
+            .padding({ left: 16, right: 16 })
+            .backgroundColor('rgba(255,255,255,0.15)')
+            .backgroundBlurStyle(BlurStyle.Thin)
+            .borderRadius(24)
+            .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
+            .onClick(() => { this.isSearchExpanded = true; })
+            .transition(TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: -10 })))
+          }
+
+          // 搜索历史（重构样式）
+          if (this.showSearchHistory && (!this.isScrolledDown || this.isSearchExpanded)) {
             SearchHistoryComponent({
               onHistoryItemClick: async (keyword: string) => {
                 this.viewModel.searchKeyword = keyword;
                 this.showSearchHistory = false;
+                this.isSearchExpanded = false;
                 await PreferencesUtil.addSearchKeyword(keyword);
                 this.viewModel.loadWallpapers();
               }
             })
-            .zIndex(100).backgroundColor('#FFFFFF').shadow({ radius: 10, color: 'rgba(0,0,0,0.05)', offsetY: 5 })
-            .borderRadius(16).margin({ top: 8 })
+            .zIndex(100)
+            .margin({ top: 12 })
           }
         }
-        .width('100%').padding({ left: 16, right: 16, top: 48, bottom: 12 })
+        .width('100%')
+        .padding({ left: 20, right: 20, top: 16, bottom: 8 })
+        .alignItems(this.isScrolledDown && !this.isSearchExpanded ? HorizontalAlign.Center : HorizontalAlign.Start)
+        .animation({ duration: 350, curve: Curve.FastOutSlowIn })
 
-        // 2. 筛选栏 - 增加间距和视觉呼吸感
-        Column() {
-          Scroll() {
-            Row() {
-              ModernFilterChip({ label: 'General', isSelected: this.isCategoryGeneral, onClickAction: () => { this.isCategoryGeneral = !this.isCategoryGeneral; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-              ModernFilterChip({ label: 'Anime', isSelected: this.isCategoryAnime, onClickAction: () => { this.isCategoryAnime = !this.isCategoryAnime; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-              ModernFilterChip({ label: 'People', isSelected: this.isCategoryPeople, onClickAction: () => { this.isCategoryPeople = !this.isCategoryPeople; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-            }
-            .padding({ left: 16, right: 16 })
+        // ── 高级筛选展开面板（修复面板间距）──
+        if (this.viewModel.isFilterExpanded && this.isToolbarVisible) {
+          Column() {
+            this.AdvancedFilterSection()
           }
-          .scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%').height(60).align(Alignment.Center)
-
-          // 3. 排序提示
-          Row() {
-            Row() {
-              SymbolGlyph($r('sys.symbol.chevron_down')).fontSize(12).fontColor(['#999999']).margin({ right: 4 })
-              Text(`Sorted by ${this.currentSorting}`).fontSize(12).fontColor('#999999').fontWeight(FontWeight.Medium)
-            }
-            Blank()
-            Row() {
-              Text(this.viewModel.isFilterExpanded ? 'Hide Filters' : 'More Filters').fontSize(12).fontColor('#007DFF').fontWeight(FontWeight.Bold)
-              SymbolGlyph(this.viewModel.isFilterExpanded ? $r('sys.symbol.chevron_up') : $r('sys.symbol.chevron_down')).fontSize(14).fontColor(['#007DFF']).margin({ left: 4 })
-            }
-            .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-            .backgroundColor('rgba(0,125,255,0.05)')
-            .borderRadius(14)
-            .onClick(() => { this.viewModel.isFilterExpanded = !this.viewModel.isFilterExpanded; })
-          }
-          .width('100%').padding({ left: 20, right: 20, top: 4, bottom: 12 })
-
-          if (this.viewModel.isFilterExpanded) {
-            Column() {
-              this.AdvancedFilterSection()
-              Blank().height(16)
-            }
-            .width('100%').backgroundColor('#FFFFFF').animation({ duration: 300, curve: Curve.FastOutSlowIn })
-          }
+          .width('90%') // 缩小宽度，创造边距
+          .padding({ left: 16, right: 16, top: 8, bottom: 12 })
+          .backgroundColor('rgba(255,255,255,0.08)')
+          .backgroundBlurStyle(BlurStyle.Thin)
+          .borderRadius(24)
+          .margin({ bottom: 12 }) // 移除左右 margin，靠 width 控制
+          .border({ width: 0.5, color: 'rgba(255,255,255,0.1)' })
+          .transition(TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: -20 })))
+          .animation({ duration: 350, curve: Curve.FastOutSlowIn })
         }
-        .width('100%').backgroundColor('rgba(255, 255, 255, 0.8)').backgroundBlurStyle(BlurStyle.Thin)
 
-        // 列表容器
+        // ═══════ 壁纸瀑布流 ═══════
         Stack({ alignContent: Alignment.Top }) {
-          // 下拉刷新组件
           Refresh({ refreshing: this.viewModel.isLoading }) {
             WaterFlow({ scroller: new Scroller() }) {
               LazyForEach(this.viewModel.dataSource, (wallpaper: WallpaperItem) => {
@@ -178,7 +258,7 @@ struct Index {
                 FlowItem() { Column() { LoadingProgress().width(32).height(32).color('#007DFF') }.width('100%').height(80).justifyContent(FlexAlign.Center) }.width('100%')
               }
               if (!this.viewModel.hasMoreData && this.viewModel.dataSource.totalCount() > 0) {
-                FlowItem() { Text('No more wallpapers').fontSize(12).fontColor('#BBB').width('100%').height(80).textAlign(TextAlign.Center) }.width('100%')
+                FlowItem() { Text('No more wallpapers').fontSize(12).fontColor('rgba(255,255,255,0.4)').width('100%').height(80).textAlign(TextAlign.Center) }.width('100%')
               }
             }
             .columnsTemplate('1fr 1fr')
@@ -188,34 +268,58 @@ struct Index {
             .height('100%')
             .padding({ left: 12, right: 12, bottom: 12 })
             .onReachEnd(() => { this.viewModel.loadMore(); })
-          }
-          .onRefreshing(() => { this.viewModel.loadWallpapers(false); })
-          .backgroundColor('#F5F5F7')
+            .onScrollFrameBegin((offset: number) => {
+              const scrollingDown = offset > 0;
+              const scrollingUp = offset < 0;
+              const significantScroll = Math.abs(offset - this.lastScrollOffset) > 5;
 
-          // 居中大动画 (仅在列表为空时显示)
+              if (significantScroll) {
+                if (scrollingDown && !this.isScrolledDown) {
+                  this.isScrolledDown = true;
+                  this.isToolbarVisible = false;
+                  this.isSearchExpanded = false;
+                  this.showSearchHistory = false;
+                } else if (scrollingUp && this.isScrolledDown) {
+                  this.isScrolledDown = false;
+                  this.isToolbarVisible = true;
+                }
+              }
+              this.lastScrollOffset = offset;
+              return { offsetRemain: offset };
+            })
+          }
+          .onRefreshing(() => {
+            this.isScrolledDown = false;
+            this.isToolbarVisible = true;
+            this.viewModel.loadWallpapers(false);
+          })
+          .backgroundColor('transparent')
+
+          // 居中加载动画
           if (this.viewModel.isLoading && this.viewModel.dataSource.totalCount() === 0) {
             Column() {
-              LoadingProgress().width(56).height(56).color('#2262db')
-              Text('Discovering beauty...').fontSize(14).fontColor('#666').margin({ top: 16 })
+              LoadingProgress().width(56).height(56).color('#007DFF')
+              Text('Discovering beauty...').fontSize(14).fontColor('rgba(255,255,255,0.7)').margin({ top: 16 })
             }
-            .width('100%').height('100%').backgroundColor('#F5F5F7').justifyContent(FlexAlign.Center).zIndex(1)
+            .width('100%').height('100%').backgroundColor('transparent').justifyContent(FlexAlign.Center).zIndex(1)
           }
 
-          // 🚀 重新设计的刷新胶囊提示 (Pill Loading)
+          // 刷新提示胶囊
           if (this.viewModel.isLoading && this.viewModel.dataSource.totalCount() > 0) {
             Row({ space: 10 }) {
-              LoadingProgress().width(18).height(18).color('#2262db')
-              Text('Refreshing Wallpapers...')
+              LoadingProgress().width(18).height(18).color('#007DFF')
+              Text('Refreshing...')
                 .fontSize(13)
                 .fontWeight(FontWeight.Medium)
-                .fontColor('#2262db')
+                .fontColor('#FFFFFF')
             }
             .padding({ left: 16, right: 16, top: 10, bottom: 10 })
             .margin({ top: 12 })
-            .backgroundColor('rgba(255, 255, 255, 0.9)')
-            .backgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THICK)
-            .borderRadius(20)
-            .shadow({ radius: 15, color: 'rgba(0,0,0,0.1)', offsetY: 5 })
+            .backgroundColor('rgba(255, 255, 255, 0.15)')
+            .backgroundBlurStyle(BlurStyle.Thin)
+            .border({ width: 0.5, color: 'rgba(255,255,255,0.1)' })
+            .borderRadius(24)
+            .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
             .transition(TransitionEffect.asymmetric(
               TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: -50 })),
               TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: -50 }))
@@ -223,13 +327,14 @@ struct Index {
             .zIndex(10)
           }
 
+          // 错误状态
           if (this.viewModel.errorMessage && this.viewModel.dataSource.totalCount() === 0) {
             Column() {
-              SymbolGlyph($r('sys.symbol.wifi_slash')).fontSize(48).fontColor(['#999999'])
-              Text(this.viewModel.errorMessage).fontSize(14).fontColor('#999').margin({ top: 16 })
+              SymbolGlyph($r('sys.symbol.wifi_slash')).fontSize(48).fontColor(['rgba(255,255,255,0.4)'])
+              Text(this.viewModel.errorMessage).fontSize(14).fontColor('rgba(255,255,255,0.4)').margin({ top: 16 })
               Button('Retry').margin({ top: 24 }).onClick(() => this.viewModel.loadWallpapers())
             }
-            .width('100%').height('100%').backgroundColor('#FFFFFF').justifyContent(FlexAlign.Center)
+            .width('100%').height('100%').backgroundColor('transparent').justifyContent(FlexAlign.Center)
           }
         }
         .width('100%').layoutWeight(1)
@@ -237,130 +342,140 @@ struct Index {
       .width('100%').height('100%')
 
       // 浮动刷新按钮
-      Button() {
+      Button({ type: ButtonType.Circle }) {
         SymbolGlyph($r('sys.symbol.arrow_clockwise'))
           .fontSize(24).fontColor(['#ffffff'])
           .symbolEffect(new PulseSymbolEffect(), this.viewModel.isLoading)
       }
-      .width(56).height(56).backgroundColor('#007DFF').borderRadius(28)
-      .shadow({ radius: 12, color: 'rgba(0, 125, 255, 0.4)', offsetY: 6 })
+      .width(56).height(56)
+      .backgroundColor('#007DFF')
+      .shadow({ radius: 15, color: 'rgba(0, 125, 255, 0.45)', offsetY: 8 })
       .position({ x: '100%', y: '100%' }).markAnchor({ x: 76, y: 76 })
       .onClick(() => { this.viewModel.loadWallpapers(false); })
     }
-    .width('100%').height('100%')
+    .width('100%').height('100%').backgroundColor('#000000')
   }
 
   @Builder
   AdvancedFilterSection() {
     Column() {
-      // Sorting
-      this.FilterTitle('Sorting')
-      Scroll() { 
-        Row() { 
-          ForEach(AppConstants.SORTING_OPTIONS, (o: SelectOption) => { 
-            ModernFilterChip({ 
-              label: o.label, 
-              isSelected: this.currentSorting === o.value, 
-              onClickAction: () => { 
-                this.currentSorting = o.value; 
-                this.syncViewModelFilters(); 
-                this.viewModel.loadWallpapers(); 
-              } 
-            }) 
-          }) 
+      // Category
+      this.FilterTitle('Category')
+      Scroll() {
+        Row() {
+          ModernFilterChip({ label: 'General', isSelected: this.isCategoryGeneral, onClickAction: () => { this.isCategoryGeneral = !this.isCategoryGeneral; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+          ModernFilterChip({ label: 'Anime', isSelected: this.isCategoryAnime, onClickAction: () => { this.isCategoryAnime = !this.isCategoryAnime; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+          ModernFilterChip({ label: 'People', isSelected: this.isCategoryPeople, onClickAction: () => { this.isCategoryPeople = !this.isCategoryPeople; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
         }
-        .padding({ left: 16, right: 16 }) 
       }
       .scrollable(ScrollDirection.Horizontal)
       .scrollBar(BarState.Off)
-      .height(44)
+      .height(36)
+
+      // Sorting
+      this.FilterTitle('Sorting')
+      Scroll() {
+        Row() {
+          ForEach(AppConstants.SORTING_OPTIONS, (o: SelectOption) => {
+            ModernFilterChip({
+              label: o.label,
+              isSelected: this.currentSorting === o.value,
+              onClickAction: () => {
+                this.currentSorting = o.value;
+                this.syncViewModelFilters();
+                this.viewModel.loadWallpapers();
+              }
+            })
+          })
+        }
+      }
+      .scrollable(ScrollDirection.Horizontal)
+      .scrollBar(BarState.Off)
+      .height(36)
 
       // Purity
       this.FilterTitle('Purity')
-      Scroll() { 
-        Row() { 
-          ModernFilterChip({ 
-            label: 'SFW', 
-            isSelected: this.isPuritySFW, 
-            onClickAction: () => { 
-              this.isPuritySFW = !this.isPuritySFW; 
-              this.syncViewModelFilters(); 
-              this.viewModel.loadWallpapers(); 
-            } 
+      Scroll() {
+        Row() {
+          ModernFilterChip({
+            label: 'SFW',
+            isSelected: this.isPuritySFW,
+            onClickAction: () => {
+              this.isPuritySFW = !this.isPuritySFW;
+              this.syncViewModelFilters();
+              this.viewModel.loadWallpapers();
+            }
           })
-          ModernFilterChip({ 
-            label: 'Sketchy', 
-            isSelected: this.isPuritySketchy, 
-            onClickAction: () => { 
-              this.isPuritySketchy = !this.isPuritySketchy; 
-              this.syncViewModelFilters(); 
-              this.viewModel.loadWallpapers(); 
-            } 
+          ModernFilterChip({
+            label: 'Sketchy',
+            isSelected: this.isPuritySketchy,
+            onClickAction: () => {
+              this.isPuritySketchy = !this.isPuritySketchy;
+              this.syncViewModelFilters();
+              this.viewModel.loadWallpapers();
+            }
           })
         }
-        .padding({ left: 16, right: 16 }) 
       }
       .scrollable(ScrollDirection.Horizontal)
       .scrollBar(BarState.Off)
-      .height(44)
-
-      // Time Range
-      if (this.currentSorting === 'toplist') {
-        this.FilterTitle('Time Range')
-        Scroll() { 
-          Row() { 
-            ForEach(AppConstants.TOPRANGE_OPTIONS, (o: SelectOption) => { 
-              ModernFilterChip({ 
-                label: o.label, 
-                isSelected: this.viewModel.selectedTopRange === o.value, 
-                onClickAction: () => { 
-                  this.viewModel.selectedTopRange = o.value; 
-                  this.viewModel.loadWallpapers(); 
-                } 
-              }) 
-            }) 
-          }
-          .padding({ left: 16, right: 16 }) 
-        }
-        .scrollable(ScrollDirection.Horizontal)
-        .scrollBar(BarState.Off)
-        .height(44)
-      }
-
-      // Resolution
-      this.FilterTitle('Resolution')
-      Scroll() { 
-        Row() { 
-          ForEach(AppConstants.RESOLUTION_OPTIONS, (o: SelectOption) => { 
-            ModernFilterChip({ 
-              label: o.label, 
-              isSelected: this.viewModel.selectedResolution === o.value, 
-              onClickAction: () => { 
-                this.viewModel.selectedResolution = o.value; 
-                this.viewModel.loadWallpapers(); 
-              } 
-            }) 
-          }) 
-        }
-        .padding({ left: 16, right: 16 }) 
-      }
-      .scrollable(ScrollDirection.Horizontal)
-      .scrollBar(BarState.Off)
-      .height(44)
+      .height(36)
     }
-    .padding({ bottom: 16 })
+    .padding({ top: 4, bottom: 4 })
   }
 
   @Builder FilterTitle(title: string) {
     Text(title)
-      .fontSize(12)
+      .fontSize(11)
       .fontWeight(FontWeight.Bold)
-      .fontColor('#333333')
-      .margin({ top: 16, bottom: 10, left: 18 })
+      .fontColor('rgba(255,255,255,0.6)')
+      .margin({ top: 10, bottom: 6 })
   }
 
   pageTransition() {
     PageTransitionEnter({ duration: 350, curve: Curve.FastOutSlowIn }).opacity(0)
     PageTransitionExit({ duration: 350, curve: Curve.FastOutSlowIn }).opacity(0)
+  }
+}
+
+/**
+ * 独立的背景组件，通过 @Prop 确保响应式更新
+ */
+@Component
+struct BackgroundWallpaper {
+  @Prop url: string;
+
+  build() {
+    Stack() {
+      // 默认/兜底背景
+      Image($r('app.media.wallhavenrqgpm7'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+        .blur(80)
+        .saturate(1.8)
+        .brightness(0.5)
+        .scale({ x: 1.2, y: 1.2 })
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+
+      // 动态背景
+      if (this.url && this.url.length > 0) {
+        Image(this.url)
+          .width('100%')
+          .height('100%')
+          .objectFit(ImageFit.Cover)
+          .blur(80)
+          .saturate(1.8) // 显著提升饱和度，即使是暗色壁纸也能提取出色彩
+          .brightness(0.5) // 提高亮度系数，避免暗图变纯黑
+          .scale({ x: 1.2, y: 1.2 }) // 放大消除模糊边缘
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+          .animation({ duration: 800, curve: Curve.EaseInOut })
+          .onError((e) => {
+            console.error('[BackgroundWallpaper] Image load failed:', JSON.stringify(e));
+          })
+      }
+    }
+    .width('100%')
+    .height('100%')
   }
 }

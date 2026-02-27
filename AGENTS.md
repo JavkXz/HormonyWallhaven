@@ -5,106 +5,139 @@
 
 ---
 
-**Generated:** 2026-01-30
-**Commit:** Unknown
-**Branch:** Unknown
+**Updated:** 2026-02-12
 
 ## OVERVIEW
-HarmonyOS 壁纸应用，使用 wallhaven.cc API、ArkTS 和声明式 UI（WaterFlow）。
+HarmonyOS 壁纸应用，采用 MVVM 架构，集成 wallhaven.cc API，使用 ArkTS 声明式 UI（WaterFlow 瀑布流）。支持壁纸浏览、搜索筛选、收藏持久化和沉浸式详情预览。
 
 ## STRUCTURE
 ```
-./
-├── entry/                    # 主模块
-│   └── src/main/
-│       ├── ets/
-│       │   ├── entryability/       # UIAbility 生命周期
-│       │   ├── entrybackupability/ # BackupExtensionAbility（非标准命名）
-│       │   ├── pages/             # UI 页面
-│       │   ├── service/           # 业务逻辑（WallhavenService）
-│       │   ├── model/             # 数据接口
-│       │   └── utils/            # 工具类（HttpUtil, AppConfig 单例）
-│       └── resources/            # 应用资源（media, elements）
-├── oh_modules/                   # 依赖（@ohos/hypium, @ohos/hamock）
-└── AppScope/                    # 应用级配置
+entry/src/main/ets/
+├── common/                  # 公共基础
+│   ├── BasicDataSource.ets       # LazyForEach 数据源基类
+│   ├── Constants.ets             # 全局常量
+│   └── GlobalState.ets           # 全局状态管理 (@ObservedV2)
+├── components/              # 可复用 UI 组件
+│   ├── ModernComponents.ets      # 卡片、筛选 Chip 等现代组件
+│   ├── EmptyStateComponent.ets   # 空状态占位组件
+│   └── SearchHistoryComponent.ets # 搜索历史
+├── model/                   # 数据模型
+│   ├── WallpaperModel.ets        # WallpaperItem, SearchParams 接口
+│   └── WallpaperDataSource.ets   # LazyForEach 数据适配器
+├── pages/                   # UI 页面
+│   ├── Index.ets                 # 主页 (WaterFlow 瀑布流)
+│   ├── HomePage.ets              # 首页 Tab
+│   ├── WallpaperDetail.ets       # 详情页 (沉浸式)
+│   ├── FavoritesPage.ets         # 收藏页
+│   └── SettingsPage.ets          # 设置页
+├── service/                 # 业务服务
+│   └── WallhavenService.ets      # Wallhaven API 封装
+├── utils/                   # 工具类
+│   ├── HttpUtil.ets              # @kit.NetworkKit GET/POST 封装
+│   ├── AppConfig.ets             # 单例配置 & 服务工厂
+│   ├── FavoriteRepository.ets    # 收藏仓库 (RDB 持久化)
+│   ├── PreferencesUtil.ets       # Preferences 封装
+│   └── HapticFeedback.ets        # 触感反馈
+├── viewmodel/               # 视图模型
+│   └── MainViewModel.ets         # 主页 ViewModel
+├── entryability/            # UIAbility 生命周期
+│   └── EntryAbility.ets
+└── entrybackupability/      # BackupExtensionAbility
+    └── EntryBackupAbility.ets
 ```
 
 ## WHERE TO LOOK
 | 任务 | 位置 | 备注 |
-|------|----------|-------|
-| 应用入口 | `entry/src/main/ets/entryability/EntryAbility.ets` | 加载 `pages/Index` |
-| 主界面 | `entry/src/main/ets/pages/Index.ets` | 壁纸列表，WaterFlow 布局 |
-| API 服务 | `entry/src/main/ets/service/WallhavenService.ets` | Wallhaven API 封装 |
-| HTTP 客户端 | `entry/src/main/ets/utils/HttpUtil.ets` | @kit.NetworkKit 封装 |
-| 数据模型 | `entry/src/main/ets/model/WallpaperModel.ets` | WallpaperItem, SearchParams 接口 |
-| 配置 | `entry/src/main/ets/utils/AppConfig.ets` | 单例模式，服务工厂 |
-| 构建配置 | `build-profile.json5`, `entry/build-profile.json5` | HarmonyOS SDK 6.0.2 (API 22) |
-| Lint 配置 | `code-linter.json5` | ESLint + TypeScript + 安全规则 |
+|------|------|------|
+| 应用入口 | `entryability/EntryAbility.ets` | 加载 `pages/Index` |
+| 主界面/瀑布流 | `pages/Index.ets` | WaterFlow 布局，Tab 导航 |
+| 壁纸详情 | `pages/WallpaperDetail.ets` | 沉浸式全屏预览 |
+| 收藏管理 | `pages/FavoritesPage.ets` + `utils/FavoriteRepository.ets` | RDB 持久化 |
+| 设置 | `pages/SettingsPage.ets` + `utils/PreferencesUtil.ets` | API Key，偏好 |
+| API 服务 | `service/WallhavenService.ets` | Wallhaven API 封装 |
+| HTTP 客户端 | `utils/HttpUtil.ets` | @kit.NetworkKit 封装 |
+| 全局状态 | `common/GlobalState.ets` | @ObservedV2 + @Trace |
+| 数据模型 | `model/WallpaperModel.ets` | WallpaperItem, SearchParams |
+| ViewModel | `viewmodel/MainViewModel.ets` | 首页业务逻辑 |
+| 复用组件 | `components/ModernComponents.ets` | 卡片、筛选 Chip |
+| 构建配置 | `build-profile.json5` | HarmonyOS SDK 6.0.2 (API 22) |
 
 ## CODE MAP
-(无 LSP - 手动分析)
 
 | 符号 | 类型 | 位置 | 角色 |
-|--------|------|----------|------|
-| EntryAbility | class | entryability/EntryAbility.ets | 主 UIAbility，加载 Index 页面 |
-| EntryBackupAbility | class | entrybackupability/EntryBackupAbility.ets | BackupExtensionAbility |
-| Index | struct | pages/Index.ets | 主壁纸列表页（WaterFlow） |
-| HomePage | struct | pages/HomePage.ets | 首页 |
-| SettingsPage | struct | pages/SettingsPage.ets | 设置页 |
-| WallhavenService | class | service/WallhavenService.ets | API 客户端，搜索/详情方法 |
-| HttpUtil | class | utils/HttpUtil.ets | GET/POST 封装，详细日志 |
-| AppConfig | class | utils/AppConfig.ets | 单例，服务工厂 |
-| WallpaperItem | interface | model/WallpaperModel.ets | 核心数据结构 |
+|------|------|------|------|
+| EntryAbility | class | entryability/ | 主 UIAbility，加载 Index |
+| Index | struct | pages/ | 主页，WaterFlow + Tab 导航 |
+| HomePage | struct | pages/ | 首页 Tab |
+| WallpaperDetail | struct | pages/ | 沉浸式壁纸详情 |
+| FavoritesPage | struct | pages/ | 收藏页，LazyForEach 列表 |
+| SettingsPage | struct | pages/ | 设置页 |
+| GlobalState | class | common/ | @ObservedV2 全局状态中心 |
+| BasicDataSource | class | common/ | IDataSource 基类 (LazyForEach) |
+| Constants | - | common/ | 全局常量定义 |
+| ModernComponents | - | components/ | @Builder 卡片/筛选组件集 |
+| EmptyStateComponent | struct | components/ | 空状态 UI |
+| SearchHistoryComponent | struct | components/ | 搜索历史 |
+| WallpaperModel | interface | model/ | WallpaperItem, SearchParams |
+| WallpaperDataSource | class | model/ | LazyForEach 数据适配 |
+| WallhavenService | class | service/ | API 搜索/详情，数据转换 |
+| HttpUtil | class | utils/ | GET/POST 封装 |
+| AppConfig | class | utils/ | 单例，服务工厂 |
+| FavoriteRepository | class | utils/ | RDB 收藏 CRUD |
+| PreferencesUtil | class | utils/ | Preferences 读写 |
+| HapticFeedback | class | utils/ | 触感反馈封装 |
+| MainViewModel | class | viewmodel/ | 首页 MVVM 视图模型 |
 
-## CONVENTIONS (deviations from standard)
+## DATA FLOW
+```
+UI (Index.ets / MainViewModel)
+  → AppConfig.getInstance().getWallhavenService()
+  → WallhavenService.searchWallpapers(params)
+  → HttpUtil.doGet(url)
+  → JSON → WallpaperItem[]
+  → WallpaperDataSource (LazyForEach)
+  → WaterFlow 渲染
 
-**命名：**
-- 私有只读字段：PascalCase 带修饰符（`private readonly CARD_MARGIN: number = 6`）
-- 模块常量：UPPER_SNAKE_CASE（`DOMAIN = 0x0000`）
-- 文件扩展名：所有源文件使用 `.ets`
+收藏操作:
+  UI → FavoriteRepository.add/remove(wallpaperId)
+  → RDB 持久化
+  → GlobalState 同步更新
+```
 
-**架构：**
-- AppConfig 使用单例模式
-- 服务层分离 API 调用和 UI
-- 模型使用 `| undefined` 表示可选字段
-- Index 页面在 API 失败时使用回退数据
-- 使用 @Builder 装饰器实现可复用 UI 组件
+## CONVENTIONS
 
-**非标准：**
-- `entrybackupability/` 目录应改为 `extensions/` 或合并到 `entryability/`
-- `resources/base/media/` 中的大型静态资源（25MB+）应使用 `rawfile/` 或运行时下载
+**架构模式：**
+- MVVM：ViewModel 处理业务逻辑，View 纯展示
+- 全局状态：`@ObservedV2` + `@Trace` 驱动响应式更新
+- 单例工厂：`AppConfig.getInstance().getXxxService()`
+
+**命名规范：**
+- 私有只读字段：PascalCase (`private readonly CardMargin`)
+- 模块常量：UPPER_SNAKE_CASE (`DOMAIN = 0x0000`)
+- 文件扩展名：统一 `.ets`
+
+**错误处理：**
+- 服务层：失败返回 `[]` 或 `null`，不抛出异常
+- UI 层：try/catch + 回退数据或静默日志
 
 **日志：**
-- 生命周期事件：`hilog.info(DOMAIN, 'testTag', '%{public}s', message)`
-- 通用调试：`console.info/error()`（允许中文注释）
+- 生命周期：`hilog.info(DOMAIN, 'testTag', '%{public}s', msg)`
+- 调试：`console.info/error()`
 
-## ANTI-PATTERNS (THIS PROJECT)
-未发现明确的 TODO/FIXME/DEPRECATED 注释。
-安全 lint 规则：禁止不安全的加密操作（AES, hash, MAC, DH, DSA, ECDSA, RSA, 3DES）。
-
-## UNIQUE STYLES
-- WaterFlow 基于宽高比计算高度
-- HttpUtil 包含详细的 HTTP 请求日志
-- 未使用 Object.assign - 手动合并选项
-- 服务在错误时返回空数组/null 而非抛出异常
-- API key 可选（无 key 也可工作）
+**设计规范：**
+- 参见 `docs/design/DESIGN_GUIDE.md`
 
 ## COMMANDS
 ```bash
-# 构建
 hvigor buildDebug    # Debug 构建
 hvigor buildRelease  # Release 构建
 hvigor deploy        # 部署
-
-# Lint（构建时自动运行）
-# 配置在 code-linter.json5
 ```
 
 ## NOTES
 - 目标 SDK：HarmonyOS 6.0.2 (API Level 22)
-- 使用 wallhaven.cc API（基础使用无需 API key）
-- 测试使用 Hypium 框架（`@ohos/hypium`）
-- Mock 数据位于 `entry/src/mock/` 目录
-- Lint 忽略 test/mock/node_modules/build 目录
-- HttpUtil 维护单个静态 HttpRequest 实例
-- AppConfig.getApiKey() 返回 undefined（硬编码 API key 已禁用）
+- 使用 wallhaven.cc API（基础使用无需 API Key）
+- 测试框架：Hypium (`@ohos/hypium`)，Mock 框架：`@ohos/hamock`
+- Lint 配置：`code-linter.json5`，忽略 test/mock/node_modules/build
+- 安全规则：禁止不安全加密操作 (AES, RSA, 3DES 等)
+- 未来规划：RCP 网络层迁移、折叠屏/平板适配、二级缓存方案

@@ -53,4 +53,32 @@ export class AppConstants {
     { value: '32x9', label: '32:9' },
     { value: '9x16', label: '9:16 (Portrait)' }
   ];
+
+  /**
+   * 将原始分辨率文字简化为直觉标签（如 4K、2K、FHD）
+   * 用于壁纸卡片药丸徽章展示
+   */
+  static simplifyResolution(resolution: string): string {
+    if (!resolution) {
+      return 'HD';
+    }
+    const parts = resolution.split('x');
+    if (parts.length < 2) {
+      return resolution;
+    }
+    const width = parseInt(parts[0]);
+    if (isNaN(width)) {
+      return resolution;
+    }
+    if (width >= 7680) {
+      return '8K+';
+    } else if (width >= 3840) {
+      return '4K';
+    } else if (width >= 2560) {
+      return '2K';
+    } else if (width >= 1920) {
+      return 'FHD';
+    }
+    return 'HD';
+  }
 }

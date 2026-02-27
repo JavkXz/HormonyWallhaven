@@ -3,65 +3,55 @@ struct HomePage {
   @State message: string = 'HarmonyOS壁纸应用';
 
   build() {
-    Column() {
-      Text(this.message)
-        .fontSize(24)
-        .fontWeight(FontWeight.Bold)
-        .margin({ bottom: 40 })
+    Stack() {
+      // 统一沉浸式背景
+      Image($r('app.media.wallhavenrqgpm7'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+        .blur(100)
+        .brightness(0.3)
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
-      // 导航到主壁纸页面
-      Button('进入壁纸应用')
-        .width(250)
-        .height(50)
-        .fontSize(16)
-        .onClick(() => {
-          // 在实际应用中，这里会使用路由跳转
-          console.info('[HomePage] 导航到壁纸应用');
-        })
-        .margin({ bottom: 20 })
+      Column() {
+        Text(this.message)
+          .fontSize(28)
+          .fontWeight(FontWeight.Bolder)
+          .fontColor('#FFFFFF')
+          .margin({ bottom: 40 })
+          .shadow({ radius: 10, color: 'rgba(0,0,0,0.5)', offsetY: 5 })
 
-      // 测试按钮 - 直接在首页测试日志
-      Button('快速测试日志输出')
-        .width(250)
-        .height(50)
-        .fontSize(16)
-        .backgroundColor('#4caf50')
-        .onClick(() => {
-          console.info('[HomePage] 快速日志测试开始');
-          
-          // 测试不同级别的日志
-          console.debug('[HomePage] DEBUG - 调试信息');
-          console.info('[HomePage] INFO - 一般信息');
-          console.warn('[HomePage] WARN - 警告信息');
-          console.error('[HomePage] ERROR - 错误信息');
-          
-          // 测试HTTP请求日志
-          this.testHttpRequest();
-        })
-        .margin({ bottom: 20 })
+        // 导航到主壁纸页面
+        Button('Discover Beauty')
+          .width(260)
+          .height(56)
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
+          .backgroundColor('#007DFF')
+          .borderRadius(28)
+          .shadow({ radius: 20, color: 'rgba(0,125,255,0.4)', offsetY: 8 })
+          .onClick(() => {
+            router.pushUrl({ url: 'pages/Index' });
+            console.info('[HomePage] 导航到壁纸列表页');
+          })
+          .margin({ bottom: 24 })
 
-      Text('查看日志方法:')
-        .fontSize(14)
-        .fontColor('#666')
-        .margin({ top: 40, bottom: 10 })
-
-      Text('1. DevEco Studio → Logcat窗口')
-        .fontSize(12)
-        .fontColor('#888')
-      Text('2. 命令行: hdc shell hilog')
-        .fontSize(12)
-        .fontColor('#888')
-        .margin({ top: 5 })
-      Text('3. 过滤标签: hdc shell hilog -T "HTTP"')
-        .fontSize(12)
-        .fontColor('#888')
-        .margin({ top: 5 })
+        Column({ space: 8 }) {
+          Text('Powered by HarmonyOS Next')
+            .fontSize(12)
+            .fontColor('rgba(255,255,255,0.4)')
+          Text('Styled with Immersive Fluidity')
+            .fontSize(12)
+            .fontColor('rgba(255,255,255,0.3)')
+        }
+        .margin({ top: 60 })
+      }
+      .width('100%')
+      .padding(20)
     }
     .width('100%')
     .height('100%')
-    .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
-    .padding(20)
+    .backgroundColor('#000000')
   }
 
   async testHttpRequest() {

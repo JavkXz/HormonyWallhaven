@@ -14,6 +14,7 @@ export class MainViewModel {
   errorMessage: string = '';
   currentPage: number = 1;
   hasMoreData: boolean = true;
+  firstWallpaper: WallpaperItem | null = null; // 用于首页动态背景
 
   // 内部请求锁
   private isRequesting: boolean = false;
@@ -106,6 +107,11 @@ export class MainViewModel {
         this.dataSource.appendData(newWallpapers);
       } else {
         this.dataSource.setData(newWallpapers);
+        if (newWallpapers.length > 0) {
+          this.firstWallpaper = newWallpapers[0];
+        } else {
+          this.firstWallpaper = null;
+        }
       }
 
       if (newWallpapers.length === 0) {

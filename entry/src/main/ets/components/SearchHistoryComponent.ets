@@ -1,8 +1,7 @@
 import { PreferencesUtil } from '../utils/PreferencesUtil';
 
 /**
- * 搜索历史组件
- * 展示搜索历史标签云，支持点击搜索和删除
+ * 搜索历史组件 (沉浸式暗色磨砂风格)
  */
 @Component
 export struct SearchHistoryComponent {
@@ -17,72 +16,53 @@ export struct SearchHistoryComponent {
     this.loadSearchHistory();
   }
 
-  /**
-   * 加载搜索历史
-   */
   async loadSearchHistory() {
     this.isLoading = true;
     try {
       this.searchHistory = await PreferencesUtil.getSearchHistory();
-      console.info(`[SearchHistory] 加载搜索历史，共 ${this.searchHistory.length} 条`);
     } catch (error) {
-      console.error('[SearchHistory] 加载搜索历史失败:', error);
+      console.error('[SearchHistory] 加载失败:', error);
     } finally {
       this.isLoading = false;
     }
   }
 
-  /**
-   * 删除单个历史记录
-   */
   async removeHistoryItem(keyword: string) {
     try {
       await PreferencesUtil.removeSearchKeyword(keyword);
       await this.loadSearchHistory();
-      console.info(`[SearchHistory] 删除历史记录: ${keyword}`);
     } catch (error) {
-      console.error('[SearchHistory] 删除历史记录失败:', error);
+      console.error('[SearchHistory] 删除失败:', error);
     }
   }
 
-  /**
-   * 清空所有历史记录
-   */
   async clearAllHistory() {
     try {
       await PreferencesUtil.clearSearchHistory();
       await this.loadSearchHistory();
-      if (this.onClearAll) {
-        this.onClearAll();
-      }
-      console.info('[SearchHistory] 清空所有历史记录');
+      if (this.onClearAll) this.onClearAll();
     } catch (error) {
-      console.error('[SearchHistory] 清空历史记录失败:', error);
+      console.error('[SearchHistory] 清空失败:', error);
     }
   }
 
-  /**
-   * 处理历史项点击
-   */
   handleHistoryItemClick(keyword: string) {
-    if (this.onHistoryItemClick) {
-      this.onHistoryItemClick(keyword);
-    }
+    if (this.onHistoryItemClick) this.onHistoryItemClick(keyword);
   }
 
   build() {
     Column() {
       // 标题栏
       Row() {
-        Text('搜索历史')
-          .fontSize(14)
-          .fontColor('#666666')
-          .fontWeight(FontWeight.Medium)
+        Text('Search History')
+          .fontSize(13)
+          .fontColor('rgba(255,255,255,0.6)')
+          .fontWeight(FontWeight.Bold)
 
         Blank()
 
         if (this.searchHistory.length > 0) {
-          Text('清空')
+          Text('Clear')
             .fontSize(12)
             .fontColor('#FF5252')
             .onClick(() => {
@@ -107,46 +87,42 @@ export struct SearchHistoryComponent {
         .scrollBar(BarState.Off)
         .width('100%')
       } else {
-        // 空状态提示
-        Text('暂无搜索记录')
+        // 空状态
+        Text('No history yet')
           .fontSize(12)
-          .fontColor('#999999')
+          .fontColor('rgba(255,255,255,0.4)')
           .padding({ top: 8, bottom: 16 })
           .width('100%')
           .textAlign(TextAlign.Center)
       }
     }
     .width('100%')
-    .backgroundColor('#FFFFFF')
+    .backgroundColor('transparent') // 去除背景色，依赖外部的 BlurStyle
   }
 
-  /**
-   * 历史标签构建器
-   */
   @Builder
   HistoryTagBuilder(keyword: string, index: number) {
-    Row({ space: 4 }) {
+    Row({ space: 6 }) {
       Text(keyword)
         .fontSize(13)
-        .fontColor('#333333')
+        .fontColor('#FFFFFF')
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .constraintSize({ maxWidth: 120 })
 
-      // 删除按钮 - 使用 Gesture 手势避免冒泡
+      // 删除按钮
       SymbolGlyph($r('sys.symbol.xmark'))
         .fontSize(12)
-        .fontColor(['#999999'])
-        .gesture(
-          TapGesture()
-            .onAction(() => {
-              this.removeHistoryItem(keyword);
-            })
-        )
+        .fontColor(['rgba(255,255,255,0.6)'])
+        .onClick(() => {
+          this.removeHistoryItem(keyword);
+        })
     }
-    .padding({ left: 12, right: 8, top: 6, bottom: 6 })
-    .backgroundColor('#F5F5F5')
-    .borderRadius(16)
+    .padding({ left: 12, right: 10, top: 6, bottom: 6 })
+    .backgroundColor('rgba(255,255,255,0.1)')
+    .backgroundBlurStyle(BlurStyle.Thin)
+    .borderRadius(20)
+    .border({ width: 0.5, color: 'rgba(255,255,255,0.1)' })
     .onClick(() => {
       this.handleHistoryItemClick(keyword);
     })
