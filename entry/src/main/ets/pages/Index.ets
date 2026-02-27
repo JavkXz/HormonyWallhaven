@@ -1,4 +1,4 @@
-import { ModernFilterChip, ModernWallpaperCard } from '../components/ModernComponents';
+import { ModernFilterChip, ModernWallpaperCard, ModernDropdownChip } from '../components/ModernComponents';
 import { image } from '@kit.ImageKit';
 import { router } from '@kit.ArkUI';
 import { WallpaperItem } from '../model/WallpaperModel';
@@ -24,6 +24,10 @@ struct Index {
 
   // 本地排序状态
   @State currentSorting: string = 'toplist';
+  @State currentOrder: string = 'desc';
+  @State currentTopRange: string = '1M';
+  @State currentResolution: string = '';
+  @State currentRatio: string = '';
   @State showSearchHistory: boolean = false;
 
   // 沉浸式滚动联动状态
@@ -34,8 +38,13 @@ struct Index {
 
   async aboutToAppear() {
     console.info('[Index] 页面加载完成');
-    this.syncViewModelFilters();
     this.currentSorting = this.viewModel.selectedSorting;
+    this.currentOrder = this.viewModel.selectedOrder;
+    this.currentTopRange = this.viewModel.selectedTopRange;
+    this.currentResolution = this.viewModel.selectedResolution;
+    this.currentRatio = this.viewModel.selectedRatio;
+    
+    this.syncViewModelFilters();
 
     const favoriteIds = await FavoriteRepository.getAllFavoriteIds();
     globalState.initFavorites(favoriteIds);
@@ -62,11 +71,40 @@ struct Index {
     this.viewModel.isPuritySketchy = this.isPuritySketchy;
     this.viewModel.isPurityNSFW = this.isPurityNSFW;
     this.viewModel.selectedSorting = this.currentSorting;
+    this.viewModel.selectedOrder = this.currentOrder;
+    this.viewModel.selectedTopRange = this.currentTopRange;
+    this.viewModel.selectedResolution = this.currentResolution;
+    this.viewModel.selectedRatio = this.currentRatio;
   }
 
-  private getSortingLabel(): string {
-    const option = AppConstants.SORTING_OPTIONS.find((o: SelectOption) => o.value === this.currentSorting);
-    return option ? option.label : this.currentSorting;
+  private getSortingLabel(value?: string): string {
+    const sortingValue = value || this.currentSorting;
+    const option = AppConstants.SORTING_OPTIONS.find((o: SelectOption) => o.value === sortingValue);
+    return option ? option.label : sortingValue;
+  }
+
+  private getTopRangeLabel(value?: string): string {
+    const rangeValue = value || this.currentTopRange;
+    const option = AppConstants.TOPRANGE_OPTIONS.find((o: SelectOption) => o.value === rangeValue);
+    return option ? option.label : rangeValue;
+  }
+
+  private getOrderLabel(value?: string): string {
+    const orderValue = value || this.currentOrder;
+    const option = AppConstants.ORDER_OPTIONS.find((o: SelectOption) => o.value === orderValue);
+    return option ? option.label : orderValue;
+  }
+
+  private getResolutionLabel(value?: string): string {
+    const resValue = value || this.currentResolution;
+    const option = AppConstants.RESOLUTION_OPTIONS.find((o: SelectOption) => o.value === resValue);
+    return option ? option.label : resValue;
+  }
+
+  private getRatioLabel(value?: string): string {
+    const ratioValue = value || this.currentRatio;
+    const option = AppConstants.RATIO_OPTIONS.find((o: SelectOption) => o.value === ratioValue);
+    return option ? option.label : ratioValue;
   }
 
   build() {
@@ -139,14 +177,7 @@ struct Index {
                 .backgroundBlurStyle(BlurStyle.Thin)
                 .borderRadius(24)
                 .shadow({ radius: 10, color: 'rgba(0,0,0,0.2)', offsetY: 4 })
-                .onClick(() => {
-                  const options = AppConstants.SORTING_OPTIONS;
-                  const currentIndex = options.findIndex((o: SelectOption) => o.value === this.currentSorting);
-                  const nextIndex = (currentIndex + 1) % options.length;
-                  this.currentSorting = options[nextIndex].value;
-                  this.syncViewModelFilters();
-                  this.viewModel.loadWallpapers();
-                })
+                .bindMenu(this.SortingMenuBuilder())
 
                 Blank()
 
@@ -357,69 +388,111 @@ struct Index {
   }
 
   @Builder
+  SortingMenuBuilder() {
+    Menu() {
+      ForEach(AppConstants.SORTING_OPTIONS, (option: SelectOption) => {
+        MenuItem({ content: option.label })
+          .onClick(() => {
+            this.currentSorting = option.value;
+            this.syncViewModelFilters();
+            this.viewModel.loadWallpapers();
+          })
+      })
+    }
+  }
+
+  @Builder
   AdvancedFilterSection() {
     Column() {
-      // Category
-      this.FilterTitle('Category')
-      Scroll() {
-        Row() {
-          ModernFilterChip({ label: 'General', isSelected: this.isCategoryGeneral, onClickAction: () => { this.isCategoryGeneral = !this.isCategoryGeneral; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-          ModernFilterChip({ label: 'Anime', isSelected: this.isCategoryAnime, onClickAction: () => { this.isCategoryAnime = !this.isCategoryAnime; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-          ModernFilterChip({ label: 'People', isSelected: this.isCategoryPeople, onClickAction: () => { this.isCategoryPeople = !this.isCategoryPeople; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
-        }
-      }
-      .scrollable(ScrollDirection.Horizontal)
-      .scrollBar(BarState.Off)
-      .height(36)
+      // Category & Purity (Keep Chips as they are multi-select)
+      Row() {
+        Column() {
+          this.FilterTitle('Category')
+          Row() {
+            ModernFilterChip({ label: 'General', isSelected: this.isCategoryGeneral, onClickAction: () => { this.isCategoryGeneral = !this.isCategoryGeneral; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+            ModernFilterChip({ label: 'Anime', isSelected: this.isCategoryAnime, onClickAction: () => { this.isCategoryAnime = !this.isCategoryAnime; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+            ModernFilterChip({ label: 'People', isSelected: this.isCategoryPeople, onClickAction: () => { this.isCategoryPeople = !this.isCategoryPeople; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+          }
+        }.alignItems(HorizontalAlign.Start)
+      }.width('100%')
 
-      // Sorting
-      this.FilterTitle('Sorting')
-      Scroll() {
-        Row() {
-          ForEach(AppConstants.SORTING_OPTIONS, (o: SelectOption) => {
-            ModernFilterChip({
-              label: o.label,
-              isSelected: this.currentSorting === o.value,
-              onClickAction: () => {
-                this.currentSorting = o.value;
-                this.syncViewModelFilters();
-                this.viewModel.loadWallpapers();
-              }
-            })
-          })
-        }
-      }
-      .scrollable(ScrollDirection.Horizontal)
-      .scrollBar(BarState.Off)
-      .height(36)
+      Row() {
+        Column() {
+          this.FilterTitle('Purity')
+          Row() {
+            ModernFilterChip({ label: 'SFW', isSelected: this.isPuritySFW, onClickAction: () => { this.isPuritySFW = !this.isPuritySFW; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+            ModernFilterChip({ label: 'Sketchy', isSelected: this.isPuritySketchy, onClickAction: () => { this.isPuritySketchy = !this.isPuritySketchy; this.syncViewModelFilters(); this.viewModel.loadWallpapers(); } })
+          }
+        }.alignItems(HorizontalAlign.Start)
+      }.width('100%')
 
-      // Purity
-      this.FilterTitle('Purity')
-      Scroll() {
-        Row() {
-          ModernFilterChip({
-            label: 'SFW',
-            isSelected: this.isPuritySFW,
-            onClickAction: () => {
-              this.isPuritySFW = !this.isPuritySFW;
-              this.syncViewModelFilters();
-              this.viewModel.loadWallpapers();
-            }
-          })
-          ModernFilterChip({
-            label: 'Sketchy',
-            isSelected: this.isPuritySketchy,
-            onClickAction: () => {
-              this.isPuritySketchy = !this.isPuritySketchy;
+      // Dropdown Filters
+      this.FilterTitle('Refinement')
+      Flex({ wrap: FlexWrap.Wrap }) {
+        // Sorting Dropdown
+        ModernDropdownChip({
+          label: 'Sort',
+          valueLabel: this.getSortingLabel(),
+          options: AppConstants.SORTING_OPTIONS,
+          onSelect: (val) => {
+            this.currentSorting = val;
+            this.syncViewModelFilters();
+            this.viewModel.loadWallpapers();
+          }
+        })
+
+        // Top Range (Conditional)
+        if (this.currentSorting === 'toplist') {
+          ModernDropdownChip({
+            label: 'Range',
+            valueLabel: this.getTopRangeLabel(),
+            options: AppConstants.TOPRANGE_OPTIONS,
+            onSelect: (val) => {
+              this.currentTopRange = val;
               this.syncViewModelFilters();
               this.viewModel.loadWallpapers();
             }
           })
         }
+
+        // Order
+        ModernDropdownChip({
+          label: 'Order',
+          valueLabel: this.getOrderLabel(),
+          options: AppConstants.ORDER_OPTIONS,
+          onSelect: (val) => {
+            this.currentOrder = val;
+            this.syncViewModelFilters();
+            this.viewModel.loadWallpapers();
+          }
+        })
+
+        // Resolution
+        ModernDropdownChip({
+          label: 'Res',
+          valueLabel: this.getResolutionLabel(),
+          options: AppConstants.RESOLUTION_OPTIONS,
+          onSelect: (val) => {
+            this.currentResolution = val;
+            this.syncViewModelFilters();
+            this.viewModel.loadWallpapers();
+          }
+        })
+
+        // Ratio
+        ModernDropdownChip({
+          label: 'Ratio',
+          valueLabel: this.getRatioLabel(),
+          options: AppConstants.RATIO_OPTIONS,
+          onSelect: (val) => {
+            this.currentRatio = val;
+            this.syncViewModelFilters();
+            this.viewModel.loadWallpapers();
+          }
+        })
       }
-      .scrollable(ScrollDirection.Horizontal)
-      .scrollBar(BarState.Off)
-      .height(36)
+      .width('100%')
+      .margin({ top: 4 })
     }
     .padding({ top: 4, bottom: 4 })
   }

@@ -1,11 +1,11 @@
 # PROJECT KNOWLEDGE BASE
 
 ## 【最高优先级指令】
-**所有思考、回答和生成的文件统一使用中文。**
+**所有思考、回答和生成的文件统一使用中文。禁止在代码注释、文档或对话中使用英文总结（除非是术语）。**
 
 ---
 
-**Updated:** 2026-02-12
+**Updated:** 2026-02-27
 
 ## OVERVIEW
 HarmonyOS 壁纸应用，采用 MVVM 架构，集成 wallhaven.cc API，使用 ArkTS 声明式 UI（WaterFlow 瀑布流）。支持壁纸浏览、搜索筛选、收藏持久化和沉浸式详情预览。
@@ -137,7 +137,6 @@ hvigor deploy        # 部署
 ## NOTES
 - 目标 SDK：HarmonyOS 6.0.2 (API Level 22)
 - 使用 wallhaven.cc API（基础使用无需 API Key）
-- 测试框架：Hypium (`@ohos/hypium`)，Mock 框架：`@ohos/hamock`
-- Lint 配置：`code-linter.json5`，忽略 test/mock/node_modules/build
-- 安全规则：禁止不安全加密操作 (AES, RSA, 3DES 等)
-- 未来规划：RCP 网络层迁移、折叠屏/平板适配、二级缓存方案
+- **性能红线**：UI 线程禁止执行 I/O 或复杂计算，必须使用 `TaskPool`。
+- **编码规范**：参考项目内置的 ArkTS 编码风格指南。
+- 未来规划：RCP 网络层迁移、折叠屏/平板适配、二级缓存方案。

@@ -1,5 +1,5 @@
 import { WallpaperItem } from '../model/WallpaperModel';
-import { AppConstants } from '../common/Constants';
+import { AppConstants, SelectOption } from '../common/Constants';
 import { globalState } from '../common/GlobalState';
 
 /**
@@ -33,6 +33,59 @@ export struct ModernFilterChip {
     .onClick(() => {
       if (this.onClickAction) this.onClickAction();
     })
+  }
+}
+
+/**
+ * 现代下拉筛选标签组件 - 用于多选项切换
+ */
+@Component
+export struct ModernDropdownChip {
+  @Prop label: string;
+  @Prop valueLabel: string;
+  options: SelectOption[] = [];
+  onSelect: (value: string) => void = () => {};
+
+  build() {
+    Row() {
+      Text(this.label + ': ')
+        .fontSize(12)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('rgba(255,255,255,0.6)')
+      
+      Text(this.valueLabel)
+        .fontSize(12)
+        .fontWeight(FontWeight.Bold)
+        .fontColor('#FFFFFF')
+      
+      SymbolGlyph($r('sys.symbol.chevron_down'))
+        .fontSize(10)
+        .fontColor(['rgba(255,255,255,0.6)'])
+        .margin({ left: 4 })
+    }
+    .padding({ left: 14, right: 14, top: 8, bottom: 8 })
+    .backgroundColor('rgba(255,255,255,0.12)')
+    .backgroundBlurStyle(BlurStyle.Thin)
+    .borderRadius(24)
+    .margin({ right: 10, bottom: 8 })
+    .border({
+      width: 0.5,
+      color: 'rgba(255,255,255,0.1)'
+    })
+    .bindMenu(this.MenuBuilder())
+    .animation({ duration: 350, curve: Curve.FastOutSlowIn })
+  }
+
+  @Builder
+  MenuBuilder() {
+    Menu() {
+      ForEach(this.options, (option: SelectOption) => {
+        MenuItem({ content: option.label as string })
+          .onClick(() => {
+            this.onSelect(option.value);
+          })
+      })
+    }
   }
 }
 

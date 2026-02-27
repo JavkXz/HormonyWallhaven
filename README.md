@@ -10,6 +10,21 @@
 - 📱 **壁纸详情** — 全屏预览，沉浸式模糊背景，一键设置壁纸
 - ⚙️ **设置管理** — API Key 配置，个性化偏好
 
+## 核心架构 (MVVM)
+
+项目采用标准的 MVVM 模式，利用 HarmonyOS Next 的 `@ObservedV2` 和 `@Trace` 实现响应式数据流：
+- **View**: ArkUI 声明式组件，通过 ViewModel 驱动 UI 更新。
+- **ViewModel**: 处理 UI 逻辑与数据转换，解耦 View 与 Service。
+- **Model/Service**: 封装 API 请求 (`WallhavenService`) 与本地持久化 (`FavoriteRepository`)。
+
+## 未来规划 (Roadmap)
+
+- [ ] **网络层演进**：迁移至 `Remote Communication Kit (RCP)`，提升并发性能与请求拦截能力。
+- [ ] **性能优化**：引入图片二级缓存（Disk Cache）及 `TaskPool` 并发解析 JSON，确保瀑布流 0 掉帧。
+- [ ] **功能增强**：实现一键设置壁纸功能，支持锁屏与桌面同步设置。
+- [ ] **多端适配**：针对折叠屏、平板及 PC 端优化分栏布局与多列响应式显示。
+- [ ] **原子化服务**：提取核心功能，支持 HarmonyOS 元服务卡片预览。
+
 ## 技术栈
 
 | 项目 | 详情 |
