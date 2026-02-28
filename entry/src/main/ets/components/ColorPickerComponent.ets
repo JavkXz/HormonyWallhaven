@@ -32,62 +32,57 @@ export struct ColorPickerComponent {
   }
   
   build() {
-    // 使用 Stack 作为根容器，确保正确显示
-    Stack() {
-      Column() {
-        // 标题
-        Text('Color Filter')
-          .fontSize(16)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#FFFFFF')
-          .margin({ bottom: 20 })
-        
-        // 颜色网格 (7 列 x4 行)
-        Flex({ wrap: FlexWrap.Wrap }) {
-          ForEach(this.COLORS, (color: string) => {
-            this.ColorItem(color)
-          }, (color: string) => color)
-        }
-        .width('100%')
-        .margin({ bottom: 24 })
-        
-        // 底部按钮
-        Row({ space: 16 }) {
-          // 清除按钮
-          Button('Clear')
-            .layoutWeight(1)
-            .height(44)
-            .fontSize(14)
-            .fontWeight(FontWeight.Medium)
-            .backgroundColor('rgba(255,255,255,0.1)')
-            .fontColor('#FFFFFF')
-            .borderRadius(22)
-            .onClick(() => {
-              this.localSelectedColors = [];
-              this.onClose([]);
-            })
-          
-          // 确认按钮
-          Button('Apply')
-            .layoutWeight(1)
-            .height(44)
-            .fontSize(14)
-            .fontWeight(FontWeight.Bold)
-            .backgroundColor('#007DFF')
-            .fontColor('#FFFFFF')
-            .borderRadius(22)
-            .shadow({ radius: 10, color: 'rgba(0,125,255,0.4)', offsetY: 4 })
-            .onClick(() => {
-              this.onClose([...this.localSelectedColors]);
-            })
-        }
-        .width('100%')
+    Column() {
+      // 标题
+      Text('Color Filter')
+        .fontSize(16)
+        .fontWeight(FontWeight.Bold)
+        .fontColor('#FFFFFF')
+        .margin({ bottom: 20 })
+      
+      // 颜色网格 (7 列 x4 行)
+      Flex({ wrap: FlexWrap.Wrap }) {
+        ForEach(this.COLORS, (color: string) => {
+          this.ColorItem(color)
+        }, (color: string) => color)
       }
       .width('100%')
-      .padding({ left: 28, right: 28, top: 24, bottom: 24 })
+      .margin({ bottom: 24 })
+      
+      // 底部按钮
+      Row({ space: 16 }) {
+        // 清除按钮
+        Button('Clear')
+          .layoutWeight(1)
+          .height(44)
+          .fontSize(14)
+          .fontWeight(FontWeight.Medium)
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .fontColor('#FFFFFF')
+          .borderRadius(22)
+          .onClick(() => {
+            this.localSelectedColors = [];
+            this.onClose([]);
+          })
+        
+        // 确认按钮
+        Button('Apply')
+          .layoutWeight(1)
+          .height(44)
+          .fontSize(14)
+          .fontWeight(FontWeight.Bold)
+          .backgroundColor('#007DFF')
+          .fontColor('#FFFFFF')
+          .borderRadius(22)
+          .shadow({ radius: 10, color: 'rgba(0,125,255,0.4)', offsetY: 4 })
+          .onClick(() => {
+            this.onClose([...this.localSelectedColors]);
+          })
+      }
+      .width('100%')
     }
     .width('90%')
-    .height('auto')
+    .padding({ left: 28, right: 28, top: 24, bottom: 24 })
     .backgroundColor('#1a1a1a')
     .borderRadius(24)
     .border({ width: 1, color: 'rgba(255,255,255,0.1)' })
