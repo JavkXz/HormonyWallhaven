@@ -390,7 +390,38 @@ struct Index {
             .translate({ x: '-50%', y: '-50%' })
           }
         }
+      
+      // 颜色选择器弹窗 (移到 Stack 层级，确保全屏居中显示)
+      if (this.showColorPicker) {
+        ColorPickerComponent({
+          selectedColors: this.selectedColors,
+          onClose: (colors: string[]) => {
+            this.selectedColors = colors;
+            this.showColorPicker = false;
+            this.viewModel.loadWallpapers();
+          }
+        })
+        .zIndex(1000)
+        .position({ x: '50%', y: '50%' })
+        .translate({ x: '-50%', y: '-50%' })
       }
+      
+      // 半透明遮罩层
+      if (this.showColorPicker) {
+        Row() {
+          // 透明可点击区域，点击关闭弹窗
+          Blank()
+            .onClick(() => {
+              this.showColorPicker = false;
+            })
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor('rgba(0, 0, 0, 0.5)')
+        .zIndex(999)
+        .position({ x: 0, y: 0 })
+      }
+    }
       .width('100%').height('100%')
       // 浮动刷新按钮
       Button({ type: ButtonType.Circle }) {

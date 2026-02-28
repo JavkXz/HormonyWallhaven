@@ -34,6 +34,67 @@ export struct ColorPickerComponent {
   }
   
   build() {
+    // 半透明遮罩背景
+    Column() {
+      // 标题
+      Text('Color Filter')
+        .fontSize(14)
+        .fontWeight(FontWeight.Bold)
+        .fontColor('rgba(255,255,255,0.6)')
+        .margin({ bottom: 16 })
+      
+      // 颜色网格 (7 列 x4 行)
+      Flex({ wrap: FlexWrap.Wrap }) {
+        ForEach(this.COLORS, (color: string) => {
+          this.ColorItem(color)
+        }, (color: string) => color)
+      }
+      .width('100%')
+      
+      // 底部按钮
+      Row({ space: 12 }) {
+        // 清除按钮
+        Button('Clear')
+          .layoutWeight(1)
+          .height(40)
+          .fontSize(13)
+          .fontWeight(FontWeight.Medium)
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .fontColor('#FFFFFF')
+          .borderRadius(20)
+          .onClick(() => {
+            this.localSelectedColors = [];
+            this.onClose([]);
+          })
+        
+        // 确认按钮
+        Button('Apply')
+          .layoutWeight(1)
+          .height(40)
+          .fontSize(13)
+          .fontWeight(FontWeight.Bold)
+          .backgroundColor('#007DFF')
+          .fontColor('#FFFFFF')
+          .borderRadius(20)
+          .shadow({ radius: 10, color: 'rgba(0,125,255,0.3)', offsetY: 4 })
+          .onClick(() => {
+            this.onClose([...this.localSelectedColors]);
+          })
+      }
+      .width('100%')
+      .margin({ top: 20 })
+    }
+    .width('90%')
+    .padding({ left: 24, right: 24, top: 20, bottom: 24 })
+    .backgroundColor('rgba(30, 30, 30, 0.95)')
+    .borderRadius(24)
+    .border({ width: 0.5, color: 'rgba(255,255,255,0.1)' })
+    .shadow({ radius: 30, color: 'rgba(0,0,0,0.5)', offsetY: 10 })
+    .onClick((event) => {
+      // 阻止点击事件冒泡，防止关闭弹窗
+      event.stopPropagation();
+    })
+  }
     Column() {
       // 标题
       Text('Color Filter')
