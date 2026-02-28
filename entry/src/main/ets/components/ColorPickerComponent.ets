@@ -32,86 +32,88 @@ export struct ColorPickerComponent {
   }
   
   build() {
-    Column() {
-      // 标题
-      Text('Color Filter')
-        .fontSize(14)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('rgba(255,255,255,0.6)')
-        .margin({ bottom: 16 })
-      
-      // 颜色网格 (7 列 x4 行)
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(this.COLORS, (color: string) => {
-          this.ColorItem(color)
-        }, (color: string) => color)
-      }
-      .width('100%')
-      
-      // 底部按钮
-      Row({ space: 12 }) {
-        // 清除按钮
-        Button('Clear')
-          .layoutWeight(1)
-          .height(40)
-          .fontSize(13)
-          .fontWeight(FontWeight.Medium)
-          .backgroundColor('rgba(255,255,255,0.1)')
-          .fontColor('#FFFFFF')
-          .borderRadius(20)
-          .onClick(() => {
-            this.localSelectedColors = [];
-            this.onClose([]);
-          })
-        
-        // 确认按钮
-        Button('Apply')
-          .layoutWeight(1)
-          .height(40)
-          .fontSize(13)
+    // 使用 Stack 作为根容器，确保正确显示
+    Stack() {
+      Column() {
+        // 标题
+        Text('Color Filter')
+          .fontSize(16)
           .fontWeight(FontWeight.Bold)
-          .backgroundColor('#007DFF')
           .fontColor('#FFFFFF')
-          .borderRadius(20)
-          .shadow({ radius: 10, color: 'rgba(0,125,255,0.3)', offsetY: 4 })
-          .onClick(() => {
-            this.onClose([...this.localSelectedColors]);
-          })
+          .margin({ bottom: 20 })
+        
+        // 颜色网格 (7 列 x4 行)
+        Flex({ wrap: FlexWrap.Wrap }) {
+          ForEach(this.COLORS, (color: string) => {
+            this.ColorItem(color)
+          }, (color: string) => color)
+        }
+        .width('100%')
+        .margin({ bottom: 24 })
+        
+        // 底部按钮
+        Row({ space: 16 }) {
+          // 清除按钮
+          Button('Clear')
+            .layoutWeight(1)
+            .height(44)
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .backgroundColor('rgba(255,255,255,0.1)')
+            .fontColor('#FFFFFF')
+            .borderRadius(22)
+            .onClick(() => {
+              this.localSelectedColors = [];
+              this.onClose([]);
+            })
+          
+          // 确认按钮
+          Button('Apply')
+            .layoutWeight(1)
+            .height(44)
+            .fontSize(14)
+            .fontWeight(FontWeight.Bold)
+            .backgroundColor('#007DFF')
+            .fontColor('#FFFFFF')
+            .borderRadius(22)
+            .shadow({ radius: 10, color: 'rgba(0,125,255,0.4)', offsetY: 4 })
+            .onClick(() => {
+              this.onClose([...this.localSelectedColors]);
+            })
+        }
+        .width('100%')
       }
       .width('100%')
-      .margin({ top: 20 })
+      .padding({ left: 28, right: 28, top: 24, bottom: 24 })
     }
     .width('90%')
-    .padding({ left: 24, right: 24, top: 20, bottom: 24 })
-    .backgroundColor('rgba(30, 30, 30, 0.95)')
+    .height('auto')
+    .backgroundColor('#1a1a1a')
     .borderRadius(24)
-    .border({ width: 0.5, color: 'rgba(255,255,255,0.1)' })
-    .shadow({ radius: 30, color: 'rgba(0,0,0,0.5)', offsetY: 10 })
+    .border({ width: 1, color: 'rgba(255,255,255,0.1)' })
+    .shadow({ radius: 40, color: 'rgba(0,0,0,0.6)', offsetY: 20 })
   }
   
   @Builder
   ColorItem(color: string) {
-    Column() {
-      Circle()
-        .width(32)
-        .height(32)
-        .fill(color)
-        .stroke(this.localSelectedColors.includes(color) ? '#007DFF' : 'rgba(255,255,255,0.3)')
-        .strokeWidth(this.localSelectedColors.includes(color) ? 2 : 1)
-        .shadow(this.localSelectedColors.includes(color) ? { radius: 15, color: 'rgba(0,125,255,0.3)', offsetY: 4 } : { radius: 0 })
-        .animation({ duration: 350, curve: Curve.FastOutSlowIn })
-        .onClick(() => {
-          // 切换选中状态
-          const index: number = this.localSelectedColors.indexOf(color);
-          if (index > -1) {
-            this.localSelectedColors.splice(index, 1);
-          } else {
-            this.localSelectedColors.push(color);
-          }
-        })
-    }
-    .width(48)
-    .height(48)
+    Circle()
+      .width(36)
+      .height(36)
+      .fill(color)
+      .stroke(this.localSelectedColors.includes(color) ? '#007DFF' : 'rgba(255,255,255,0.3)')
+      .strokeWidth(this.localSelectedColors.includes(color) ? 3 : 1)
+      .shadow(this.localSelectedColors.includes(color) ? { radius: 15, color: 'rgba(0,125,255,0.4)', offsetY: 4 } : { radius: 0 })
+      .animation({ duration: 350, curve: Curve.FastOutSlowIn })
+      .onClick(() => {
+        // 切换选中状态
+        const index: number = this.localSelectedColors.indexOf(color);
+        if (index > -1) {
+          this.localSelectedColors.splice(index, 1);
+        } else {
+          this.localSelectedColors.push(color);
+        }
+      })
+  }
     .margin({ right: 8, bottom: 8 })
   }
 }
