@@ -374,21 +374,10 @@ struct Index {
             }
             .width('100%').height('100%').backgroundColor('transparent').justifyContent(FlexAlign.Center)
           }
-
-          // 颜色选择器弹窗
-          if (this.showColorPicker) {
-            ColorPickerComponent({
-              selectedColors: this.selectedColors,
-              onClose: (colors: string[]) => {
-                this.selectedColors = colors;
-                this.showColorPicker = false;
-                this.viewModel.loadWallpapers();
-              }
-            })
-            .zIndex(100)
-            .position({ x: '50%', y: '50%' })
-            .translate({ x: '-50%', y: '-50%' })
           }
+        }
+      
+      // 颜色选择器弹窗 (移到 Stack 层级，确保全屏居中显示)
         }
       
       // 颜色选择器弹窗 (移到 Stack 层级，确保全屏居中显示)
