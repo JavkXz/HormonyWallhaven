@@ -403,18 +403,21 @@ struct Index {
       
       // 颜色选择器弹窗
       if (this.showColorPicker) {
-        ColorPickerComponent({
-          selectedColors: this.selectedColors,
-          onClose: (colors: string[]) => {
-            this.selectedColors = colors;
-            this.showColorPicker = false;
-            this.viewModel.loadWallpapers();
-          }
-        })
+        Stack() {
+          ColorPickerComponent({
+            selectedColors: this.selectedColors,
+            onClose: (colors: string[]) => {
+              this.selectedColors = colors;
+              this.showColorPicker = false;
+              this.viewModel.loadWallpapers();
+            }
+          })
+        }
         .zIndex(1000)
-        .position({ x: '50%', y: '50%' })
-        .translate({ x: '-50%', y: '-50%' })
-      }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
     }
     .width('100%').height('100%').backgroundColor('#000000')
   }
