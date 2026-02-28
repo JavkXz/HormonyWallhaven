@@ -8,6 +8,7 @@ import { PreferencesUtil } from '../utils/PreferencesUtil';
 import { FavoriteRepository } from '../utils/FavoriteRepository';
 import { globalState } from '../common/GlobalState';
 import { SearchHistoryComponent } from '../components/SearchHistoryComponent';
+import { ColorPickerComponent } from '../components/ColorPickerComponent';
 
 @Entry
 @Component
@@ -29,6 +30,8 @@ struct Index {
   @State currentResolution: string = '';
   @State currentRatio: string = '';
   @State showSearchHistory: boolean = false;
+  @State selectedColors: string[] = [];
+  @State showColorPicker: boolean = false;
 
   // 安全区域高度（从 AppStorage 全局读取）
   @StorageProp('statusBarHeight') statusBarHeight: number = 48;
@@ -371,6 +374,21 @@ struct Index {
             }
             .width('100%').height('100%').backgroundColor('transparent').justifyContent(FlexAlign.Center)
           }
+
+          // 颜色选择器弹窗
+          if (this.showColorPicker) {
+            ColorPickerComponent({
+              selectedColors: this.selectedColors,
+              onClose: (colors: string[]) => {
+                this.selectedColors = colors;
+                this.showColorPicker = false;
+                this.viewModel.loadWallpapers();
+              }
+            })
+            .zIndex(100)
+            .position({ x: '50%', y: '50%' })
+            .translate({ x: '-50%', y: '-50%' })
+          }
         }
       }
       .width('100%').height('100%')
@@ -490,6 +508,16 @@ struct Index {
             this.currentRatio = val;
             this.syncViewModelFilters();
             this.viewModel.loadWallpapers();
+          }
+        })
+
+        // Color Filter
+        ModernDropdownChip({
+          label: 'Color',
+          valueLabel: this.selectedColors.length > 0 ? `${this.selectedColors.length} colors` : 'Any Color',
+          options: [],
+          onSelect: () => {
+            this.showColorPicker = true;
           }
         })
       }

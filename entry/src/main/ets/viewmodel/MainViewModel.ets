@@ -35,6 +35,7 @@ export class MainViewModel {
   selectedResolution: string = '';
   selectedRatio: string = '';
   searchKeyword: string = ''; // 搜索关键字
+  selectedColors: string[] = []; // 颜色筛选
   
   // 随机种子 (用于分页时保持结果不重复)
   private randomSeed: string = '';
@@ -123,7 +124,8 @@ export class MainViewModel {
         topRange: this.selectedSorting === 'toplist' ? this.selectedTopRange : undefined,
         resolutions: this.selectedResolution || undefined,
         ratios: this.selectedRatio || undefined,
-        seed: this.selectedSorting === 'random' ? this.randomSeed : undefined
+        seed: this.selectedSorting === 'random' ? this.randomSeed : undefined,
+        colors: this.selectedColors.length > 0 ? this.selectedColors.join(',') : undefined
       };
 
       const newWallpapers = await this.wallhavenService.searchWallpapers(searchParams);
