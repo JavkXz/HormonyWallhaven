@@ -32,7 +32,6 @@ struct Index {
   @State showSearchHistory: boolean = false;
   @State selectedColors: string[] = [];
   @State showColorPicker: boolean = false;
-  @State showSearchHistory: boolean = false;
 
   // 安全区域高度（从 AppStorage 全局读取）
   @StorageProp('statusBarHeight') statusBarHeight: number = 48;
