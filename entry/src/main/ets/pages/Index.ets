@@ -32,6 +32,7 @@ struct Index {
   @State showSearchHistory: boolean = false;
   @State selectedColors: string[] = [];
   @State showColorPicker: boolean = false;
+  @State showSearchHistory: boolean = false;
 
   // 安全区域高度（从 AppStorage 全局读取）
   @StorageProp('statusBarHeight') statusBarHeight: number = 48;
@@ -374,13 +375,34 @@ struct Index {
             }
             .width('100%').height('100%').backgroundColor('transparent').justifyContent(FlexAlign.Center)
           }
-          }
         }
+      }
+      .width('100%').height('100%')
+      // 浮动刷新按钮
+      Button({ type: ButtonType.Circle }) {
+        SymbolGlyph($r('sys.symbol.arrow_clockwise'))
+          .fontSize(24).fontColor(['#ffffff'])
+          .symbolEffect(new PulseSymbolEffect(), this.viewModel.isLoading)
+      }
+      .width(56).height(56)
+      .backgroundColor('#007DFF')
+      .shadow({ radius: 15, color: 'rgba(0, 125, 255, 0.45)', offsetY: 8 })
+      .position({ x: '100%', y: '100%' }).markAnchor({ x: 76, y: this.bottomBarHeight + 48 })
+      .onClick(() => { this.viewModel.loadWallpapers(false); })
       
-      // 颜色选择器弹窗 (移到 Stack 层级，确保全屏居中显示)
-        }
+      // 半透明遮罩层
+      if (this.showColorPicker) {
+        Row()
+          .width('100%')
+          .height('100%')
+          .backgroundColor('rgba(0, 0, 0, 0.5)')
+          .zIndex(999)
+          .onClick(() => {
+            this.showColorPicker = false;
+          })
+      }
       
-      // 颜色选择器弹窗 (移到 Stack 层级，确保全屏居中显示)
+      // 颜色选择器弹窗
       if (this.showColorPicker) {
         ColorPickerComponent({
           selectedColors: this.selectedColors,
@@ -394,35 +416,6 @@ struct Index {
         .position({ x: '50%', y: '50%' })
         .translate({ x: '-50%', y: '-50%' })
       }
-      
-      // 半透明遮罩层
-      if (this.showColorPicker) {
-        Row() {
-          // 透明可点击区域，点击关闭弹窗
-          Blank()
-            .onClick(() => {
-              this.showColorPicker = false;
-            })
-        }
-        .width('100%')
-        .height('100%')
-        .backgroundColor('rgba(0, 0, 0, 0.5)')
-        .zIndex(999)
-        .position({ x: 0, y: 0 })
-      }
-    }
-      .width('100%').height('100%')
-      // 浮动刷新按钮
-      Button({ type: ButtonType.Circle }) {
-        SymbolGlyph($r('sys.symbol.arrow_clockwise'))
-          .fontSize(24).fontColor(['#ffffff'])
-          .symbolEffect(new PulseSymbolEffect(), this.viewModel.isLoading)
-      }
-      .width(56).height(56)
-      .backgroundColor('#007DFF')
-      .shadow({ radius: 15, color: 'rgba(0, 125, 255, 0.45)', offsetY: 8 })
-      .position({ x: '100%', y: '100%' }).markAnchor({ x: 76, y: this.bottomBarHeight + 48 })
-      .onClick(() => { this.viewModel.loadWallpapers(false); })
     }
     .width('100%').height('100%').backgroundColor('#000000')
   }
