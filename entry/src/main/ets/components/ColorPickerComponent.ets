@@ -104,6 +104,7 @@ export struct ColorPickerComponent {
       .strokeWidth(this.localSelectedColors.includes(color) ? 3 : 1)
       .shadow(this.localSelectedColors.includes(color) ? { radius: 15, color: 'rgba(0,125,255,0.4)', offsetY: 4 } : { radius: 0 })
       .animation({ duration: 350, curve: Curve.FastOutSlowIn })
+      .margin({ right: 8, bottom: 8 })
       .onClick(() => {
         // 切换选中状态
         const index: number = this.localSelectedColors.indexOf(color);
@@ -113,7 +114,5 @@ export struct ColorPickerComponent {
           this.localSelectedColors.push(color);
         }
       })
-  }
-    .margin({ right: 8, bottom: 8 })
   }
 }
