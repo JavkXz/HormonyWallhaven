@@ -35,10 +35,24 @@ export class MainViewModel {
   selectedResolution: string = '';
   selectedRatio: string = '';
   searchKeyword: string = ''; // 搜索关键字
+  
+  // 随机种子 (用于分页时保持结果不重复)
+  private randomSeed: string = '';
 
   private wallhavenService: WallhavenService = AppConfig.getInstance().getWallhavenService();
-
   constructor() {}
+  
+  /**
+   * 生成 6 位随机种子 (字母 + 数字)
+   */
+  private generateRandomSeed(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
 
   /**
    * 获取分类参数字符串 (e.g. "110")
@@ -84,6 +98,17 @@ export class MainViewModel {
       this.hasMoreData = true;
     }
     this.errorMessage = '';
+    
+    // 处理随机排序的种子逻辑
+    if (this.selectedSorting === 'random') {
+      if (!this.randomSeed) {
+        this.randomSeed = this.generateRandomSeed();
+        console.info(`[ViewModel] Generated random seed: ${this.randomSeed}`);
+      }
+    } else {
+      // 切换排序时清空种子
+      this.randomSeed = '';
+    }
 
     try {
       console.info(`[ViewModel] 开始加载壁纸，页码: ${this.currentPage}, 关键字: ${this.searchKeyword}`);
@@ -97,7 +122,8 @@ export class MainViewModel {
         page: this.currentPage,
         topRange: this.selectedSorting === 'toplist' ? this.selectedTopRange : undefined,
         resolutions: this.selectedResolution || undefined,
-        ratios: this.selectedRatio || undefined
+        ratios: this.selectedRatio || undefined,
+        seed: this.selectedSorting === 'random' ? this.randomSeed : undefined
       };
 
       const newWallpapers = await this.wallhavenService.searchWallpapers(searchParams);

@@ -128,7 +128,7 @@ struct Index {
               Row({ space: 10 }) {
                 Search({
                   value: this.viewModel.searchKeyword,
-                  placeholder: 'Search wallpapers...',
+                  placeholder: 'Search... (e.g. +tag1 -tag2, @username, type:jpg)',
                   controller: new SearchController()
                 })
                   .height(42)
