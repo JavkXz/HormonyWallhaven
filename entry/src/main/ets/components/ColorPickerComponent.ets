@@ -49,7 +49,6 @@ export struct ColorPickerComponent {
         }, (color: string) => color)
       }
       .width('100%')
-      .justifyContent(FlexAlign.Start)
       
       // 底部按钮
       Row({ space: 12 }) {
@@ -90,16 +89,14 @@ export struct ColorPickerComponent {
   
   @Builder
   ColorItem(color: string) {
-    const isSelected = this.localSelectedColors.includes(color);
-    
     Column() {
       Circle()
         .width(32)
         .height(32)
         .fill(color)
-        .stroke(isSelected ? '#007DFF' : 'rgba(255,255,255,0.3)')
-        .strokeWidth(isSelected ? 2 : 1)
-        .shadow(isSelected ? { radius: 15, color: 'rgba(0,125,255,0.3)', offsetY: 4 } : { radius: 0 })
+        .stroke(this.localSelectedColors.includes(color) ? '#007DFF' : 'rgba(255,255,255,0.3)')
+        .strokeWidth(this.localSelectedColors.includes(color) ? 2 : 1)
+        .shadow(this.localSelectedColors.includes(color) ? { radius: 15, color: 'rgba(0,125,255,0.3)', offsetY: 4 } : { radius: 0 })
         .animation({ duration: 350, curve: Curve.FastOutSlowIn })
         .onClick(() => {
           // 切换选中状态
@@ -113,7 +110,6 @@ export struct ColorPickerComponent {
     }
     .width(48)
     .height(48)
-    .justifyContent(FlexAlign.Center)
     .margin({ right: 8, bottom: 8 })
   }
 }
