@@ -1,5 +1,3 @@
-import { AppConstants } from '../common/Constants';
-
 /**
  * Immersive Fluidity 风格的颜色选择器组件
  * 严格遵循现有设计规范：
@@ -10,7 +8,7 @@ import { AppConstants } from '../common/Constants';
  */
 @Component
 export struct ColorPickerComponent {
-  // 已选颜色数组 (逗号分隔的字符串，如 "cc0000,0066cc")
+  // 已选颜色数组
   @Prop selectedColors: string[];
   // 选择器关闭回调
   onClose: (colors: string[]) => void = () => {};
@@ -34,7 +32,6 @@ export struct ColorPickerComponent {
   }
   
   build() {
-    // 半透明遮罩背景
     Column() {
       // 标题
       Text('Color Filter')
@@ -90,62 +87,6 @@ export struct ColorPickerComponent {
     .borderRadius(24)
     .border({ width: 0.5, color: 'rgba(255,255,255,0.1)' })
     .shadow({ radius: 30, color: 'rgba(0,0,0,0.5)', offsetY: 10 })
-    .onClick((event) => {
-      // 阻止点击事件冒泡，防止关闭弹窗
-      event.stopPropagation();
-    })
-  }
-    Column() {
-      // 标题
-      Text('Color Filter')
-        .fontSize(14)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('rgba(255,255,255,0.6)')
-        .margin({ bottom: 16 })
-      
-      // 颜色网格 (7 列 x4 行)
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(this.COLORS, (color: string) => {
-          this.ColorItem(color)
-        }, (color: string) => color)
-      }
-      .width('100%')
-      
-      // 底部按钮
-      Row({ space: 12 }) {
-        // 清除按钮
-        Button('Clear')
-          .layoutWeight(1)
-          .height(40)
-          .fontSize(13)
-          .fontWeight(FontWeight.Medium)
-          .backgroundColor('rgba(255,255,255,0.1)')
-          .fontColor('#FFFFFF')
-          .borderRadius(20)
-          .onClick(() => {
-            this.localSelectedColors = [];
-            this.onClose([]);
-          })
-        
-        // 确认按钮
-        Button('Apply')
-          .layoutWeight(1)
-          .height(40)
-          .fontSize(13)
-          .fontWeight(FontWeight.Bold)
-          .backgroundColor('#007DFF')
-          .fontColor('#FFFFFF')
-          .borderRadius(20)
-          .shadow({ radius: 10, color: 'rgba(0,125,255,0.3)', offsetY: 4 })
-          .onClick(() => {
-            this.onClose([...this.localSelectedColors]);
-          })
-      }
-      .width('100%')
-      .margin({ top: 20 })
-    }
-    .width('100%')
-    .padding({ left: 20, right: 20, top: 16, bottom: 20 })
   }
   
   @Builder
@@ -161,7 +102,7 @@ export struct ColorPickerComponent {
         .animation({ duration: 350, curve: Curve.FastOutSlowIn })
         .onClick(() => {
           // 切换选中状态
-          const index = this.localSelectedColors.indexOf(color);
+          const index: number = this.localSelectedColors.indexOf(color);
           if (index > -1) {
             this.localSelectedColors.splice(index, 1);
           } else {
