@@ -1,11 +1,8 @@
 /**
  * Immersive Fluidity 风格的颜色选择器组件
- * 严格遵循现有设计规范：
- * - backgroundBlurStyle(BlurStyle.Thin)
- * - borderRadius: 24
- * - 动画曲线：Curve.FastOutSlowIn (350ms)
- * - 选中边框：#007DFF
  */
+import { ThemeColors, ThemeShadows, AnimationPresets, BorderRadius } from '../common/ThemeConstants';
+
 @Component
 export struct ColorPickerComponent {
   // 已选颜色数组
@@ -37,7 +34,7 @@ export struct ColorPickerComponent {
       Text('Color Filter')
         .fontSize(16)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#FFFFFF')
+        .fontColor(ThemeColors.textPrimary)
         .margin({ bottom: 20 })
       
       // 颜色网格 (7 列 x4 行)
@@ -51,30 +48,32 @@ export struct ColorPickerComponent {
       
       // 底部按钮
       Row({ space: 16 }) {
-        // 清除按钮
+        // 清除按钮 (透明毛玻璃)
         Button('Clear')
           .layoutWeight(1)
           .height(44)
           .fontSize(14)
           .fontWeight(FontWeight.Medium)
-          .backgroundColor('rgba(255,255,255,0.1)')
-          .fontColor('#FFFFFF')
-          .borderRadius(22)
+          .fontColor(ThemeColors.textPrimary)
+          .backgroundColor(ThemeColors.surface)
+          .backgroundBlurStyle(BlurStyle.Thin)
+          .border({ width: 0.5, color: ThemeColors.border })
+          .borderRadius(BorderRadius.capsule / 2)
           .onClick(() => {
             this.localSelectedColors = [];
             this.onClose([]);
           })
         
-        // 确认按钮
+        // 确认按钮 (主色调，微发光)
         Button('Apply')
           .layoutWeight(1)
           .height(44)
           .fontSize(14)
           .fontWeight(FontWeight.Bold)
-          .backgroundColor('#007DFF')
-          .fontColor('#FFFFFF')
-          .borderRadius(22)
-          .shadow({ radius: 10, color: 'rgba(0,125,255,0.4)', offsetY: 4 })
+          .fontColor(ThemeColors.textPrimary)
+          .backgroundColor(ThemeColors.primary)
+          .borderRadius(BorderRadius.capsule / 2)
+          .shadow(ThemeShadows.primary)
           .onClick(() => {
             this.onClose([...this.localSelectedColors]);
           })
@@ -83,31 +82,45 @@ export struct ColorPickerComponent {
     }
     .width('90%')
     .padding({ left: 28, right: 28, top: 24, bottom: 24 })
-    .backgroundColor('#1a1a1a')
-    .borderRadius(24)
-    .border({ width: 1, color: 'rgba(255,255,255,0.1)' })
-    .shadow({ radius: 40, color: 'rgba(0,0,0,0.6)', offsetY: 20 })
+    .backgroundColor(ThemeColors.surfaceDark)
+    .backgroundBlurStyle(BlurStyle.Thin)
+    .borderRadius(BorderRadius.xlarge)
+    .border({ width: 0.5, color: ThemeColors.border })
+    .shadow(ThemeShadows.large)
   }
   
   @Builder
   ColorItem(color: string) {
-    Circle()
-      .width(36)
-      .height(36)
-      .fill(color)
-      .stroke(this.localSelectedColors.includes(color) ? '#007DFF' : 'rgba(255,255,255,0.3)')
-      .strokeWidth(this.localSelectedColors.includes(color) ? 3 : 1)
-      .shadow(this.localSelectedColors.includes(color) ? { radius: 15, color: 'rgba(0,125,255,0.4)', offsetY: 4 } : { radius: 0 })
-      .animation({ duration: 350, curve: Curve.FastOutSlowIn })
-      .margin({ right: 8, bottom: 8 })
-      .onClick(() => {
-        // 切换选中状态
-        const index: number = this.localSelectedColors.indexOf(color);
-        if (index > -1) {
-          this.localSelectedColors.splice(index, 1);
-        } else {
-          this.localSelectedColors.push(color);
-        }
-      })
+    Stack({ alignContent: Alignment.Center }) {
+      // 内部对勾动画图标
+      if (this.localSelectedColors.includes(color)) {
+        SymbolGlyph($r('sys.symbol.checkmark'))
+          .fontSize(16)
+          .fontColor([['#ffffff', '#cccccc', '#ffff00', '#ffcc33'].includes(color) ? '#000000' : ThemeColors.textPrimary])
+          .fontWeight(FontWeight.Bold)
+          .transition(TransitionEffect.scale({ x: 0, y: 0 }).combine(TransitionEffect.opacity(0)))
+      }
+    }
+    .width(36)
+    .height(36)
+    .backgroundColor(color)
+    .borderRadius(18)
+    .border({ 
+      width: this.localSelectedColors.includes(color) ? 2 : 0.5,
+      color: this.localSelectedColors.includes(color) ? ThemeColors.primary : ThemeColors.borderStrong
+    })
+    .shadow(this.localSelectedColors.includes(color) ? ThemeShadows.primary : { radius: 0 })
+    .margin({ right: 8, bottom: 12 })
+    .scale(this.localSelectedColors.includes(color) ? { x: 1.1, y: 1.1 } : { x: 1, y: 1 })
+    .animation({ duration: AnimationPresets.standard.duration, curve: AnimationPresets.standard.curve })
+    .onClick(() => {
+      // 切换选中状态
+      const index: number = this.localSelectedColors.indexOf(color);
+      if (index > -1) {
+        this.localSelectedColors.splice(index, 1);
+      } else {
+        this.localSelectedColors.push(color);
+      }
+    })
   }
 }

@@ -20,15 +20,15 @@ struct WallpaperSelectDialog {
   onSelect: (type: 'home' | 'lock' | 'both') => void = () => {};
   onCancel: () => void = () => {};
 
-  build() {
+build() {
     Column() {
       Row() {
-        Column().width(36).height(4).backgroundColor('rgba(0,0,0,0.1)').borderRadius(2)
+        Column().width(36).height(4).backgroundColor('rgba(255,255,255,0.2)').borderRadius(2)
       }
       .width('100%').height(20).justifyContent(FlexAlign.Center)
 
       Text('Apply Wallpaper')
-        .fontSize(21).fontWeight(FontWeight.Bolder).fontColor('#212121')
+        .fontSize(21).fontWeight(FontWeight.Bolder).fontColor('#FFFFFF')
         .margin({ top: 12, bottom: 28 })
 
       Row({ space: 24 }) {
@@ -39,20 +39,24 @@ struct WallpaperSelectDialog {
       .width('100%').justifyContent(FlexAlign.Center).margin({ bottom: 40 })
 
       Button('Cancel')
-        .width('85%').height(48).backgroundColor('#F5F5F5').fontColor('#424242').borderRadius(24).margin({ bottom: 32 })
+        .width('85%').height(48).backgroundColor('rgba(255,255,255,0.1)').fontColor('#FFFFFF').borderRadius(24)
+        .backgroundBlurStyle(BlurStyle.Thin)
+        .border({ width: 0.5, color: 'rgba(255,255,255,0.1)' })
+        .margin({ bottom: 32 })
         .onClick(() => { this.onCancel(); this.controller.close(); })
     }
-    .width('100%').backgroundColor('rgba(255, 255, 255, 0.95)').backgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THICK).borderRadius({ topLeft: 32, topRight: 32 })
+    .width('100%').backgroundColor('rgba(0, 0, 0, 0.25)').backgroundBlurStyle(BlurStyle.Thin).borderRadius({ topLeft: 32, topRight: 32 })
+    .border({ width: 0.5, color: 'rgba(255,255,255,0.08)' })
   }
 
   @Builder
   OptionItem(label: string, icon: Resource, action: () => void) {
     Column() {
       Stack() {
-        Circle({ width: 64, height: 64 }).fill('rgba(33, 150, 243, 0.08)')
-        SymbolGlyph(icon).fontSize(32).fontColor(['#2196F3'])
+        Circle({ width: 64, height: 64 }).fill('rgba(0,125,255,0.15)')
+        SymbolGlyph(icon).fontSize(32).fontColor(['#007DFF'])
       }
-      Text(label).fontSize(13).fontWeight(FontWeight.Medium).fontColor('#757575').margin({ top: 12 })
+      Text(label).fontSize(13).fontWeight(FontWeight.Medium).fontColor('rgba(255,255,255,0.8)').margin({ top: 12 })
     }
     .onClick(() => { action(); this.controller.close(); })
   }

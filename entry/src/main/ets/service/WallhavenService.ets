@@ -38,7 +38,7 @@ export class WallhavenService {
       if (params.atleast) queryParts.push(`atleast=${params.atleast}`);
       if (params.resolutions) queryParts.push(`resolutions=${params.resolutions}`);
       if (params.ratios) queryParts.push(`ratios=${params.ratios}`);
-      if (params.colors) queryParts.push(`colors=${params.colors}`);
+      if (params.colors) queryParts.push(`colors=${encodeURIComponent(params.colors)}`);
       if (params.page) queryParts.push(`page=${params.page.toString()}`);
       if (params.seed) queryParts.push(`seed=${params.seed}`);
       // 列表请求时添加 fields 参数优化带宽

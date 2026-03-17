@@ -90,6 +90,48 @@ export struct ModernDropdownChip {
 }
 
 /**
+ * 现代点击操作标签组件 - 用于点击触发弹窗等操作
+ */
+@Component
+export struct ModernActionChip {
+  @Prop label: string;
+  @Prop valueLabel: string;
+  onClickAction: () => void = () => {};
+
+  build() {
+    Row() {
+      Text(this.label + ': ')
+        .fontSize(12)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('rgba(255,255,255,0.6)')
+      
+      Text(this.valueLabel)
+        .fontSize(12)
+        .fontWeight(FontWeight.Bold)
+        .fontColor('#FFFFFF')
+      
+      SymbolGlyph($r('sys.symbol.chevron_down'))
+        .fontSize(10)
+        .fontColor(['rgba(255,255,255,0.6)'])
+        .margin({ left: 4 })
+    }
+    .padding({ left: 14, right: 14, top: 8, bottom: 8 })
+    .backgroundColor('rgba(255,255,255,0.12)')
+    .backgroundBlurStyle(BlurStyle.Thin)
+    .borderRadius(24)
+    .margin({ right: 10, bottom: 8 })
+    .border({
+      width: 0.5,
+      color: 'rgba(255,255,255,0.1)'
+    })
+    .animation({ duration: 350, curve: Curve.FastOutSlowIn })
+    .onClick(() => {
+      this.onClickAction();
+    })
+  }
+}
+
+/**
  * 彻底重构的现代壁纸卡片组件
  * 采用悬浮图片布局，增加精致感与视觉层次
  */

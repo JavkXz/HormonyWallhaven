@@ -1,4 +1,4 @@
-import { ModernFilterChip, ModernWallpaperCard, ModernDropdownChip } from '../components/ModernComponents';
+import { ModernFilterChip, ModernWallpaperCard, ModernDropdownChip, ModernActionChip } from '../components/ModernComponents';
 import { image } from '@kit.ImageKit';
 import { router } from '@kit.ArkUI';
 import { WallpaperItem } from '../model/WallpaperModel';
@@ -9,6 +9,7 @@ import { FavoriteRepository } from '../utils/FavoriteRepository';
 import { globalState } from '../common/GlobalState';
 import { SearchHistoryComponent } from '../components/SearchHistoryComponent';
 import { ColorPickerComponent } from '../components/ColorPickerComponent';
+import { ThemeColors, ThemeShadows, AnimationPresets } from '../common/ThemeConstants';
 
 @Entry
 @Component
@@ -82,6 +83,7 @@ struct Index {
     this.viewModel.selectedTopRange = this.currentTopRange;
     this.viewModel.selectedResolution = this.currentResolution;
     this.viewModel.selectedRatio = this.currentRatio;
+    this.viewModel.selectedColors = this.selectedColors;
   }
 
   private getSortingLabel(value?: string): string {
@@ -389,35 +391,40 @@ struct Index {
       .position({ x: '100%', y: '100%' }).markAnchor({ x: 76, y: this.bottomBarHeight + 48 })
       .onClick(() => { this.viewModel.loadWallpapers(false); })
       
-      // 半透明遮罩层
+      // 半透明遮罩层（带入场动画）
       if (this.showColorPicker) {
         Row()
           .width('100%')
           .height('100%')
-          .backgroundColor('rgba(0, 0, 0, 0.5)')
+          .backgroundColor(ThemeColors.backgroundOverlay)
           .zIndex(999)
+          .animation({ duration: AnimationPresets.standard.duration, curve: AnimationPresets.standard.curve })
           .onClick(() => {
             this.showColorPicker = false;
           })
       }
       
-      // 颜色选择器弹窗
+      // 颜色选择器弹窗（带动画）
       if (this.showColorPicker) {
-        Stack() {
+        Flex({ justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
           ColorPickerComponent({
             selectedColors: this.selectedColors,
             onClose: (colors: string[]) => {
               this.selectedColors = colors;
               this.showColorPicker = false;
+              this.syncViewModelFilters();
               this.viewModel.loadWallpapers();
             }
+          })
+          .animation({ 
+            duration: AnimationPresets.enter.duration, 
+            curve: AnimationPresets.enter.curve 
           })
         }
         .zIndex(1000)
         .width('100%')
         .height('100%')
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
+      }
     }
     .width('100%').height('100%').backgroundColor('#000000')
   }
@@ -527,11 +534,10 @@ struct Index {
         })
 
         // Color Filter
-        ModernDropdownChip({
+        ModernActionChip({
           label: 'Color',
           valueLabel: this.selectedColors.length > 0 ? `${this.selectedColors.length} colors` : 'Any Color',
-          options: [],
-          onSelect: () => {
+          onClickAction: () => {
             this.showColorPicker = true;
           }
         })
@@ -551,8 +557,8 @@ struct Index {
   }
 
   pageTransition() {
-    PageTransitionEnter({ duration: 350, curve: Curve.FastOutSlowIn }).opacity(0)
-    PageTransitionExit({ duration: 350, curve: Curve.FastOutSlowIn }).opacity(0)
+    PageTransitionEnter(AnimationPresets.enter).opacity(0)
+    PageTransitionExit(AnimationPresets.exit).opacity(0)
   }
 }
 

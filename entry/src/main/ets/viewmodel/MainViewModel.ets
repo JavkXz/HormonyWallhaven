@@ -125,7 +125,7 @@ export class MainViewModel {
         resolutions: this.selectedResolution || undefined,
         ratios: this.selectedRatio || undefined,
         seed: this.selectedSorting === 'random' ? this.randomSeed : undefined,
-        colors: this.selectedColors.length > 0 ? this.selectedColors.join(',') : undefined
+        colors: this.selectedColors.length > 0 ? this.selectedColors.map(c => c.replace('#', '')).join(',') : undefined
       };
 
       const newWallpapers = await this.wallhavenService.searchWallpapers(searchParams);
